@@ -1,0 +1,863 @@
+
+---
+title: Análisis de popularidad de canciones en el servicio de streamig Spotify
+date: 2024-05-03
+authors:
+  - García Aguilar Luis Alberto
+  - Sara Luz
+  - Valeria
+  - Iván
+---
+
+
+### Librerias
+```{r message=FALSE, results="hide"}
+
+#install.packages("spotifyr")
+#install.packages("bayesrules")
+library(rstan)
+library(ggplot2)
+library(gridExtra)
+
+```
+
+
+# Análisis de popularidad de canciones en spotify
+
+## Planteamiento
+
+De acuerdo con wikipedia, en la plataforma de Spotify se tiene acceso a más de 100 millones de canciones. Algunas canciones son más populares que otras. Si definimos a la variable 𝑌 como un rating de popularidad con 𝑌 ∈ [0, 100]. En general, entre más reproducciones recientes tenga una una canción, su rating de popularidad será mayor. 
+
+Sabemos que la popularidad de una canción, no siempre es reflejo de su calidad, popularidad a largo plazo, o popularidad afuera de la audiencia de Spotify.
+Además del artista hay otras características que hacen popular a una canción, como la “valencia”, que define que tan alegre suena una pieza.
+
+Para el proyecto nos enfocaremos en entender:
+
+* Cual es la popularidad típica de una canción en Spotify?
+* Hasta donde influye el artista en la popularidad de la canción?
+* Para un sólo artista, cómo varía la popularidad de sus canciones?
+* Como influye la valencia en la popularidad de una canción?
+
+Métodos:
+
+* Para nuestro proyecto planeamos hacer tres tipos de modelos:
+* Modelo con parámetros homogéneos: Modelar la popularidad de las canciones sin tomar en cuenta el artista.
+* Modelo con parámetros heterogéneos: Modelar la popularidad de las canciones tomando en cuenta a los artistas que las interpretan.
+* Modelo Jerárquico Una alternativa intermedia donde permitimos que la distribución inicial sobre la popularidad pueda adaptarse a los datos. Y comparar sus distribuciones predictivas con los datos observados, para ver cuál modela mejor y porqué.
+* Modelo Jerarquico con DAG: Haremos un DAG para agregar al modelo jerárquico la variable de valencia.
+
+
+## Tamaño y estructura de los datos
+
+Observamos la estructura de los datos
+
+```{r}
+
+datos <- read.csv("datos/datos.csv")
+print(head(datos))
+```
+
+Contamos con 114000 registros de canciones y 21 características que los representan
+
+```{r}
+
+str(datos)
+
+```
+
+Obtenemos un resumen de los datos y sus variables
+```{r}
+
+print(summary(datos))
+
+```
+
+
+## Limpieza y adecuación de datos
+
+### Asignacion de valores numéricos a los géneros
+
+```{r}
+
+datos$genre_factor <- factor(datos$track_genre)
+generos_unicos <- levels(datos$genre_factor)
+
+#Diccionario
+diccionario_generos <- setNames(seq_along(generos_unicos), generos_unicos)
+
+datos$genre_numeric <- diccionario_generos[datos$genre_factor]
+
+```
+
+
+### Asignación de valores numéricos al artista
+
+```{r}
+
+datos$artists_factor <- factor(datos$artists)
+artistas_unicos <- levels(datos$artists_factor)
+
+#Diccionario
+diccionario_artists <- setNames(seq_along(artistas_unicos), artistas_unicos)
+
+datos$artists_numeric <- diccionario_artists[datos$artists_factor]
+
+```
+
+### Codificación numérica para explicita
+
+```{r}
+
+datos <- transform(datos,
+                explicit = ifelse(explicit, 1, 0))
+
+```
+
+### Agregar media de popularidad por artista
+
+* Obtenemos popularidad del artista mediante la media de sus popularidades
+
+
+```{r}
+
+media_popularidad_por_artista <- aggregate(popularity ~ artists_numeric, data = datos, FUN = mean)
+
+names(media_popularidad_por_artista)[2] <- "popularity_artist"
+
+datos <- merge(datos, media_popularidad_por_artista, by = "artists_numeric", all.x = TRUE)
+
+
+```
+
+## Muestra de los datos
+
+```{r}
+
+n <- 1000  
+
+# muestra aleatoria (Sólo para EDA)
+datos <- datos[sample(nrow(datos), n), ]
+
+```
+
+## Exploración de los datos
+
+
+```{r}
+
+# popularidad
+ggplot(datos, aes(x = factor(popularity))) +
+  geom_bar(fill = "darkcyan", color = "black") +
+  labs(x = "Popularidad", y = "Frecuencia", title = "Distribución de la popularidad") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+```
+
+```{r message=FALSE,results="hide"}
+
+# Crear los gráficos individuales
+plot_valence <-ggplot(datos, aes(x = valence, y = popularity)) +
+  geom_point(color="pink") +
+  geom_smooth(method = "loess", se = FALSE, color="black") 
+  labs(x = "Valence", y = "Popularity")
+
+plot_acousticness <- ggplot(datos, aes(x = acousticness, y = popularity)) +
+  geom_point(color="lightblue") +
+  geom_smooth(method = "loess", se = FALSE, color="black") 
+  labs(x = "Acousticness", y = "Popularity")
+
+plot_danceability <- ggplot(datos, aes(x = danceability, y = popularity)) +
+  geom_point(color="gray") +
+  geom_smooth(method = "loess", se = FALSE, color="black") 
+  labs(x = "Danceability", y = "Popularity")
+
+plot_duration <- ggplot(datos, aes(x = duration_ms, y = popularity)) +
+  geom_point(color="lightgreen") +
+  geom_smooth(method = "loess", se = FALSE, color="black") 
+  labs(x = "Duration (ms)", y = "Popularity")
+
+plot_energy <- ggplot(datos, aes(x = energy, y = popularity)) +
+  geom_point(color="#e55b76") +
+  geom_smooth(method = "loess", se = FALSE, color="black") 
+  labs(x = "Energy", y = "Popularity")
+
+plot_explicit <- ggplot(datos, aes(x = explicit, y = ..count..)) +
+  geom_bar(fill="#2d8076") +
+  labs(x = "Explicit", y = "Count Explicit")
+
+plot_instrumentalness <- ggplot(datos, aes(x = instrumentalness, y = popularity)) +
+  geom_point(color="#e8dc61") +
+  geom_smooth(method = "loess", se = FALSE, color="black") 
+  labs(x = "Instrumentalness", y = "Popularity")
+
+plot_liveness <- ggplot(datos, aes(x = liveness, y = popularity)) +
+  geom_point(color="#4a802d") +
+  geom_smooth(method = "loess", se = FALSE, color="black") 
+  labs(x = "Liveness", y = "Popularity")
+
+plot_loudness <- ggplot(datos, aes(x = loudness, y = popularity)) +
+  geom_point(color="violet") +
+  geom_smooth(method = "loess", se = FALSE, color="black") 
+  labs(x = "Loudness", y = "Popularity")
+
+plot_mode <- ggplot(datos, aes(x = mode, y = ..count..)) +
+  geom_bar(fill="#945abb") +
+  labs(x = "Mode", y = "Count")
+
+plot_speechiness <- ggplot(datos, aes(x = speechiness, y = popularity)) +
+  geom_point(color="brown") +
+  geom_smooth(method = "loess", se = FALSE, color="black") 
+  labs(x = "Speechiness", y = "Popularity")
+
+plot_tempo <- ggplot(datos, aes(x = tempo, y = popularity)) +
+  geom_point(color="orange") +
+  geom_smooth(method = "loess", se = FALSE, color="black") 
+  labs(x = "Tempo", y = "Popularity")
+
+```
+
+```{r}
+
+# Colocar los gráficos en un grid
+grid.arrange(
+  plot_valence, plot_acousticness, plot_danceability, plot_duration, plot_energy,
+  plot_explicit, plot_instrumentalness, plot_liveness, plot_loudness, plot_mode,
+  plot_speechiness, plot_tempo,
+  nrow = 4, ncol = 3
+)
+
+```
+
+## Selección de columnas
+
+```{r}
+
+full_data <- datos
+selected_datos <- datos[, c("popularity", "duration_ms","explicit","danceability","tempo","genre_numeric","popularity_artist")]
+selected_datos$explicit <- as.integer(selected_datos$explicit)
+selected_datos <- head(selected_datos,5000)
+selected_datos_small <- head(selected_datos,50)
+
+```
+
+
+## Modelo lineal
+
+Generamos un modelo lineal con priors poco informativas.
+
+El modelo lineal simple lo expresamos como:
+
+$y_i=\beta_0 + \beta_1 * x_i + \sigma_i​$
+
+Donde:
+
+  $y_i$​ es la popularidad de la observación i.
+  $x_i$​ es la variable predictora (por ejemplo, duración de la canción) para la observación i.
+  $\beta_0$​ y $\beta_1$​ son los coeficientes del modelo.
+  $\sigma_i$​ es el error aleatorio asociado con la observación i, que asumiremos normalmente distribuido con media cero y varianza constante.
+
+```{r}
+
+stan_code_lineal <- "
+data {
+  int<lower=0> N;  
+  int<lower=0, upper=100> popularity[N];    
+  real<lower=0> duration[N];      
+  int<lower=0, upper=1> explicito[N];
+  real<lower=0, upper=1> dance[N];  
+  real<lower=0, upper=244> tempo[N];     
+  int<lower=1, upper=114> genre[N];     
+}
+parameters {
+  real mu_popularity; 
+  real<lower=0> sigma_popularity;                            
+  real beta_duration;
+  real beta_explicito;
+  real beta_dance;
+  real beta_tempo;
+  real beta_genre;                             
+}
+model {
+  // Priors
+  mu_popularity ~ normal(0,1);        
+  sigma_popularity ~ normal(0,1);         
+  beta_duration ~ normal(0,1);        
+  beta_explicito ~ normal(0,1);        
+  beta_dance ~ normal(0,1);   
+  beta_tempo ~ normal(0,1);        
+  beta_genre ~ normal(0,1);        
+     
+
+  // Likelihood
+  for (i in 1:N) {
+    popularity[i] ~ normal(mu_popularity + 
+                            beta_duration * duration[i] +
+                            beta_explicito * explicito[i] +
+                            beta_dance * dance[i] +
+                            beta_tempo * tempo[i] +
+                            beta_genre * genre[i] 
+                            , sigma_popularity); 
+  }
+}
+"
+
+# Compilar el modelo
+stan_model_lineal <- stan_model(model_code = stan_code_lineal)
+
+
+```
+
+```{r message= FALSE, results="hide"}
+
+# Ajustar el modelo a los datos
+fit_lineal <- sampling(stan_model_lineal, 
+                       data = list(N = nrow(selected_datos_small), 
+                                   popularity = selected_datos_small$popularity,
+                                   duration = selected_datos_small$duration_ms,
+                                   explicito = selected_datos_small$explicit,
+                                   dance = selected_datos_small$danceability,
+                                   tempo = selected_datos_small$tempo,
+                                   genre = selected_datos_small$genre_numeric), 
+                       iter=10000, warmup=3000)
+
+```
+
+```{r}
+
+# Ver resultados
+print(fit_lineal)
+
+```
+
+Observamos intervalos de credibilidad
+
+```{r}
+
+extract_lineal <- extract(fit_lineal)
+
+stan_plot(fit_lineal, prob = 0.95)
+
+```
+
+Podemos ver tambien, al observar los coeficientes, que el género y el grado de "daceability" tienen una mayor influencia sobre la popularidad de una canción.
+
+## Modelo lineal con prioris informativas
+
+Modelamos la opularidad en base a las siguientes características:
+
+  * Duración: duration_ms
+  * ¿Es explicita?: explicit
+  * ¿Que tan bailable?: danceability
+  * Tempo: tempo
+  * Genero: track_genre
+
+Proponemos como distribuciones iniciales las siguientes:
+
+  * Popularidad:
+    
+    Es nuestra variable objetivo y debido a que la popularidad es un valor discreto entre 0 y 100, elegimos una distribución Binomial Negativa la cual permitirá modelar la sobredispersión, pues esperamos que la popularidad tenga una amplia variabilidad.
+
+    En este caso, consideramos la popularidad como el resultado de un proceso de "éxito", es decir, la canción es escuchada o marcada como favorita por un usuario hasta que se alcanza un número fijo de "éxitos" ( cierto nivel de popularidad).
+
+    * popularidad ~ N($\mu$,$\phi$)
+  
+  * Duración:
+  
+    Sabemos que la duración de las canciones debe ser mayor a cero y tiene una media aproximada de 3 minutos, por lo que usaremos una distribución exponencial.
+
+    * duración ~ Exp($\lambda$) ; $\lambda$ = 1/180000 (se encuentra en milisegundos)
+
+  * Explicita: 
+  
+    La bariable "explicita" es una variable que tomará los valores 0 y 1. Usaremos entonces una distribución Beta para modelarla.
+
+    * explicita ~ Beta($\rho$) 
+
+  * Bailable:
+
+    Ya que los valores que toma esta variable se encuentran entre 0 y 1, utilizaremos uns distribución Beta.
+
+    * bailable ~ Beta($\alpha$,$\beta$)
+
+  * Tempo:
+
+    Variable continua entre 0 y 244. Utilizaremos una distribución normal truncada
+
+    * tempo ~ N+($\mu$,$\sigma$)
+
+  * Genero:
+
+    El genero es una variable entera, por lo que la modelaremos usando una distribución Multinomial.
+
+    * genero ~ Multinomial(n,p)
+
+ Utilizaremos un modelo lineal generalizado (GLM) donde la popularidad sea una función lineal de las demás variables, teniendo en cuenta la naturaleza discreta de la popularidad (valores enteros entre 0 y 100).
+
+```{r}
+
+  stan_code <- "
+  data {
+    int<lower=0> N;               
+    int<lower=0, upper=100> popularity[N];  
+    real<lower=0> duration_ms[N];      
+    int<lower=0, upper=1> explicito[N];
+    real<lower=0, upper=1> danceability[N];  
+    real<lower=0, upper=244> tempo[N];     
+    real<lower=1, upper=114> genre[N];        
+  }
+
+  parameters {
+    real phi_popularity;
+    real<lower=0> p_duration;        
+    real<lower=0, upper=1> p_explicit;  
+    real<lower=0, upper=1> p_dance; 
+    real<lower=0> mu_tempo;             
+    real<lower=0> sigma_tempo;  
+    real<lower=0> mu_genre;             
+    real<lower=0> sigma_genre;        
+    real<lower=0> p_tempo;                
+    real<lower=0> p_genre;              
+
+  }
+
+  model {
+
+    // Priors
+    phi_popularity ~ normal(0, 1);
+    p_duration ~ exponential(180000);  
+    p_explicit ~ beta(2,2);                
+    p_dance ~ beta(1, 1);           
+    mu_tempo ~ normal(120, 30);               
+    sigma_tempo ~ cauchy(0, 5);      
+    mu_genre ~ normal(120, 30);               
+    sigma_genre ~ cauchy(0, 5);  
+    p_tempo ~ normal(mu_tempo, sigma_tempo);
+    p_genre ~ normal(mu_genre, sigma_genre);
+
+    // Likelihood
+    for (i in 1:N) {
+      real mu_popularity;
+      
+      mu_popularity = p_duration * duration_ms[i] + 
+                      p_explicit * explicito[i] +
+                      p_dance * danceability[i] +
+                      p_tempo * tempo[i] +
+                      p_genre * genre[i];
+      
+      popularity[i] ~ neg_binomial_2(mu_popularity, phi_popularity); // Distribución binomial negativa para popularidad
+    }
+  }
+  "
+
+
+# Compilar el modelo
+stan_model <- stan_model(model_code = stan_code)
+
+
+```
+
+```{r message= FALSE, results="hide"}
+
+stan_data <- list(
+  N = nrow(selected_datos_small),
+  popularity = selected_datos_small$popularity,
+  duration_ms = selected_datos_small$duration_ms,
+  explicito = selected_datos_small$explicit,
+  danceability = selected_datos_small$danceability,
+  tempo = selected_datos_small$tempo,
+  genre = selected_datos_small$genre_numeric
+)
+
+
+# Ajustar el modelo a los datos
+fit <- sampling(stan_model, data = stan_data, chains = 4, iter = 50000, warmup = 5000)
+
+```
+
+
+```{r}
+
+# resultados
+print(fit)
+
+```
+
+Observamos intervalos de credibilidad
+
+```{r}
+
+stan_plot(fit, prob = 0.95)
+
+```
+
+Notamos que entre los coeficientes más altos se encuentran: genero, "danceability" y "explicit".
+
+
+## Modelo de popularidad individual
+
+El siguente modelo considerará solo la popularidad del artista como predictor de la popularidad de la canción.
+
+```{r}
+
+individual_code <-"
+data {
+  int<lower=0> N;                
+  vector[N] popularity_artist;   
+  vector[N] popularity;     
+}
+
+parameters {
+  real intercept;                 
+  real beta_artist;               
+  real<lower=0> sigma;            
+}
+
+model {
+  // Priors
+  intercept ~ normal(0, 1);      
+  beta_artist ~ normal(0, 1);     
+  sigma ~ normal(0, 1);           
+
+  // Likelihood
+  for (i in 1:N) {
+    // Modelo lineal
+    popularity[i] ~ normal(intercept + beta_artist * popularity_artist[i], sigma);
+  }
+}
+"
+
+
+# Compilar el modelo
+individual_model <- stan_model(model_code = individual_code)
+
+```
+
+```{r message= FALSE, results="hide"}
+
+stan_indiv_data <- list(
+  N = nrow(selected_datos),
+  popularity = selected_datos$popularity,
+  popularity_artist = selected_datos$popularity_artist
+)
+
+
+# Ajustar el modelo a los datos
+individual_fit <- sampling(individual_model, data = stan_indiv_data, chains = 4, iter = 10000, warmup = 500)
+
+```
+
+```{r}
+
+print(individual_fit)
+
+```
+
+
+```{r}
+
+stan_plot(individual_fit, prob = 0.95)
+
+```
+
+
+Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.
+
+En el siguiente gráfico puede observarse un intervalod el 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.
+
+```{r}
+avg_popularity_artists <- mean(selected_datos$popularity_artist)
+
+n_songs = 20
+# Calculamos las predicciones con los coeficientes obtenidos
+comp_simul <- list()
+
+for (i in 1:n_songs) {
+  mu_pred <- mean(extract(individual_fit)$intercept) + 
+             mean(extract(individual_fit)$beta_artist) * avg_popularity_artists
+             
+  pred_simuladas <- rnorm(10000, mean = mu_pred, sd = mean(extract(individual_fit)$sigma))
+
+  comp_simul[[i]] <- list(real_popularity = datos$popularity[i], simulated_popularity = pred_simuladas)
+}
+
+```
+
+```{r}
+
+# Establecer márgenes más pequeños
+par(mar = c(2, 2, 2, 2))
+
+par(mfrow=c(5, 4))  
+
+for (i in 1:length(comp_simul)) {
+
+  real_popularity <- comp_simul[[i]]$real_popularity
+  simulated_popularity <- comp_simul[[i]]$simulated_popularity
+  
+  # intervalo de confianza del 95%
+  ci <- quantile(simulated_popularity, c(0.025, 0.975))
+  
+
+  plot(1, xlim=c(0, 2), ylim=c(0, max(c(real_popularity, ci))), type="n", xlab="", ylab="Popularidad")
+  lines(rep(1, 2), ci, col="darkcyan", lwd=2)  
+  points(1, abs(mean(simulated_popularity)), col="brown", pch=19)  
+  points(1, real_popularity, col="orange", pch=19)  
+  text(1.05, real_popularity, paste("Real:", real_popularity), pos=4,offset=1)  # Etiqueta valor real
+  text(1.05, mean(simulated_popularity), paste("Media:", round(abs(mean(simulated_popularity)), 2)), pos=4,offset=-6)  # Etiqueta  media
+  title(paste("Canción", i))  # Título
+}
+
+par(mfrow=c(1, 1)) 
+
+par(mar = c(5, 4, 4, 2) + 0.1)
+
+
+```
+
+
+## Modelo popularidad entre artistas
+
+```{r}
+
+general_stan_code <-" 
+data {
+  int<lower=0> N;                // Número de observaciones
+  real popularity_avg_artist;    // Popularidad promedio entre artistas
+  vector[N] popularity;          // Popularidad de la canción
+}
+
+parameters {
+  real intercept;                // Intercepto
+  real beta_artist;              // Coeficiente de la popularidad entre artistas
+  real<lower=0> sigma;           // Desviación estándar de los errores
+}
+
+model {
+  // Priors
+  intercept ~ normal(0, 1);      // Prior para el intercepto
+  beta_artist ~ normal(0, 1);     // Prior para el coeficiente de la popularidad entre artistas
+  sigma ~ normal(0, 1);           // Prior para la desviación estándar
+
+  // Likelihood
+  for (i in 1:N) {
+    // Modelo lineal
+    popularity[i] ~ normal(intercept + beta_artist * popularity_avg_artist, sigma);
+  }
+}
+
+//generated quantities {
+//  vector[N] simulated_popularity;  // Simulaciones de la popularidad de las canciones
+
+  // Generar simulaciones
+//  for (i in 1:N) {
+//    simulated_popularity[i] = normal_rng(intercept + beta_artist * popularity_avg_artist, sigma);
+//  }
+//}
+"
+
+
+# Compilar el modelo
+general_model <- stan_model(model_code = general_stan_code)
+
+```
+
+```{r message= FALSE, results="hide"}
+
+avg_popularity_artists <- mean(selected_datos$popularity_artist)
+
+stan_general_data <- list(
+  N = nrow(selected_datos),
+  popularity = selected_datos$popularity,
+  popularity_avg_artist = avg_popularity_artists
+)
+
+
+# Ajustar el modelo a los datos
+general_fit <- sampling(general_model, data = stan_general_data, chains = 4, iter = 10000, warmup = 500)
+
+```
+
+```{r}
+
+print(general_fit)
+
+```
+
+```{r}
+
+stan_plot(general_fit, prob = 0.95)
+
+```
+
+
+Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.
+
+En el siguiente gráfico puede observarse un intervalod el 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.
+
+```{r}
+
+n_songs = 20
+comp_simul <- list()
+
+for (i in 1:n_songs) {
+  mu_pred <- mean(extract(general_fit)$intercept) + 
+             mean(extract(general_fit)$beta_artist) * avg_popularity_artists
+             
+  pred_simuladas <- rnorm(10000, mean = mu_pred, sd = mean(extract(general_fit)$sigma))
+
+  comp_simul[[i]] <- list(real_popularity = datos$popularity[i], simulated_popularity = pred_simuladas)
+}
+
+```
+
+```{r}
+par(mar = c(2, 2, 2, 2))
+
+
+par(mfrow=c(5, 4))  
+
+for (i in 1:length(comp_simul)) {
+
+  real_popularity <- comp_simul[[i]]$real_popularity
+  simulated_popularity <- comp_simul[[i]]$simulated_popularity
+  
+  # intervalo de confianza del 95%
+  ci <- quantile(simulated_popularity, c(0.025, 0.975))
+  
+
+  plot(1, xlim=c(0, 2), ylim=c(0, max(c(real_popularity, ci))), type="n", xlab="", ylab="Popularidad")
+  lines(rep(1, 2), ci, col="darkcyan", lwd=2)  
+  points(1, abs(mean(simulated_popularity)), col="brown", pch=19)  
+  points(1, real_popularity, col="orange", pch=19)  
+  text(1.05, real_popularity, paste("Real:", real_popularity), pos=4,offset=1)  # Etiqueta valor real
+  text(1.05, mean(simulated_popularity), paste("Media:", round(abs(mean(simulated_popularity)), 2)), pos=4,offset=-6)  # Etiqueta  media
+  title(paste("Canción", i))  # Título
+}
+
+par(mfrow=c(1, 1)) 
+
+par(mar = c(5, 4, 4, 2) + 0.1)
+
+```
+
+
+
+## Modelo jerárquico
+
+```{r}
+
+jerarquico_code <- "
+data {
+  int<lower=0> N;                     // Número de observaciones
+  vector[N] popularity_artist;        // Popularidad individual del artista
+  real popularity_avg_artist;         // Popularidad promedio entre artistas
+  vector[N] popularity;               // Popularidad de la canción
+}
+
+parameters {
+  real intercept;                     // Intercepto
+  real beta_individual_artist;        // Coeficiente de la popularidad individual del artista
+  real beta_avg_artist;               // Coeficiente de la popularidad promedio entre artistas
+  real<lower=0> sigma;                // Desviación estándar de los errores
+}
+
+model {
+  // Priors
+  intercept ~ normal(0, 1);          // Prior para el intercepto
+  beta_individual_artist ~ normal(0, 1);  // Prior para el coeficiente de la popularidad individual del artista
+  beta_avg_artist ~ normal(0, 1);     // Prior para el coeficiente de la popularidad promedio entre artistas
+  sigma ~ normal(0, 1);               // Prior para la desviación estándar
+
+  // Likelihood
+  for (i in 1:N) {
+    // Modelo lineal jerárquico
+    popularity[i] ~ normal(intercept + beta_individual_artist * popularity_artist[i] + beta_avg_artist * popularity_avg_artist, sigma);
+  }
+}
+
+"
+
+# Compilar el modelo
+jerarquico_model <- stan_model(model_code = jerarquico_code)
+
+```
+
+Ejecutamos el modelo
+
+```{r message= FALSE, results="hide"}
+
+stan_jerarquico_data <- list(
+  N = nrow(selected_datos),
+  popularity = selected_datos$popularity,
+  popularity_avg_artist = avg_popularity_artists,
+  popularity_artist = selected_datos$popularity_artist
+)
+
+
+# Ajustar el modelo a los datos
+jerarquico_fit <- sampling(jerarquico_model, data = stan_jerarquico_data, chains = 4, iter = 10000, warmup = 500)
+
+print(jerarquico_fit)
+
+```
+
+Observamos el resumen del entrenamiento
+
+```{r}
+
+stan_plot(jerarquico_fit, prob = 0.95)
+
+```
+
+Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.
+
+En el siguiente gráfico puede observarse un intervalod el 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.
+
+```{r}
+
+n_songs = 20
+# Calculamos las predicciones con los coeficientes obtenidos
+comp_simul <- list()
+
+for (i in 1:n_songs) {
+  mu_pred <- mean(extract(jerarquico_fit)$intercept) + 
+             mean(extract(jerarquico_fit)$beta_individual_artist) * datos$popularity_artist[i] +
+             mean(extract(jerarquico_fit)$beta_avg_artist) * avg_popularity_artists
+             
+  pred_simuladas <- rnorm(10000, mean = mu_pred, sd = mean(extract(jerarquico_fit)$sigma))
+
+  comp_simul[[i]] <- list(real_popularity = datos$popularity[i], simulated_popularity = pred_simuladas)
+}
+
+```
+
+```{r}
+
+par(mar = c(2, 2, 2, 2))
+
+
+par(mfrow=c(5, 4))  
+
+for (i in 1:length(comp_simul)) {
+
+  real_popularity <- comp_simul[[i]]$real_popularity
+  simulated_popularity <- comp_simul[[i]]$simulated_popularity
+  
+  # intervalo de confianza del 95%
+  ci <- quantile(simulated_popularity, c(0.025, 0.975))
+  
+
+  plot(1, xlim=c(0, 2), ylim=c(0, max(c(real_popularity, ci))), type="n", xlab="", ylab="Popularidad")
+  lines(rep(1, 2), ci, col="darkcyan", lwd=2)  
+  points(1, abs(mean(simulated_popularity)), col="brown", pch=19)  
+  points(1, real_popularity, col="orange", pch=19)  
+  text(1.05, real_popularity, paste("Real:", real_popularity), pos=4,offset=1)  # Etiqueta valor real
+  text(1.05, mean(simulated_popularity), paste("Media:", round(abs(mean(simulated_popularity)), 2)), pos=4,offset=-6)  # Etiqueta  media
+  title(paste("Canción", i))  # Título
+}
+
+par(mfrow=c(1, 1)) 
+
+par(mar = c(5, 4, 4, 2) + 0.1)
+
+```
