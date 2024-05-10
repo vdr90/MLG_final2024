@@ -4,25 +4,22 @@ title: Análisis de popularidad de canciones en el servicio de streamig Spotify
 date: 2024-05-03
 authors:
   - García Aguilar Luis Alberto
-  - Sara Luz
+  - Sara Luz Valenzuela Camacho
   - Valeria
   - Iván
+execute:
+  cache: true
 ---
 
-
-### Librerias
-```{r message=FALSE, results="hide"}
-
-#install.packages("spotifyr")
-#install.packages("bayesrules")
-library(rstan)
-library(ggplot2)
-library(gridExtra)
-
-```
-
-
 # Análisis de popularidad de canciones en spotify
+
+**Falta semilla en los modelos**
+
+
+# Introducción
+[ describiendo cuál es el problema que se pretende resolver, los supuestos, el contexto y el alcance.]
+
+
 
 ## Planteamiento
 
@@ -46,8 +43,22 @@ Métodos:
 * Modelo Jerárquico Una alternativa intermedia donde permitimos que la distribución inicial sobre la popularidad pueda adaptarse a los datos. Y comparar sus distribuciones predictivas con los datos observados, para ver cuál modela mejor y porqué.
 * Modelo Jerarquico con DAG: Haremos un DAG para agregar al modelo jerárquico la variable de valencia.
 
+### Librerias
+```{r message=FALSE, results="hide"}
 
-## Tamaño y estructura de los datos
+#install.packages("spotifyr")
+#install.packages("bayesrules")
+library(rstan)
+library(ggplot2)
+library(gridExtra)
+
+```
+
+
+
+## Datos
+
+[una descripción de los datos que se usan para el modelo, ya sean datos observados o simulados y el contexto en el que se utilizan.]
 
 Observamos la estructura de los datos
 
@@ -240,6 +251,8 @@ selected_datos_small <- head(selected_datos,50)
 
 ```
 
+# Métodos
+[los métodos que se utilizarán para resolver el problema. Los vistos en clase y si se incluye alguno que no se revisó, mencionar referencias y una descripción muy general del método.]
 
 ## Modelo lineal
 
@@ -861,3 +874,19 @@ par(mfrow=c(1, 1))
 par(mar = c(5, 4, 4, 2) + 0.1)
 
 ```
+
+# Resultados
+[La aplicación de los métodos a los datos. Los resultados deben ser presentados en forma fácil de entender, a través de gráficas, tablas de resumen de los resultados. En todos los casos, las gráficas y tablas tienen que ser relevantes para la comunicación de los resultados, no tienen que ser redundantes, y tienen que ser correctas.]
+
+# Conclusiones
+
+[un resumen de la conclusión del estudio, en donde se especifíque cómo se resolvió el problema propuesto, así como futuras vías de ampliación del estudio. También mencionar las limitaciones que se encontraron, y porqué no se pudieron atacar algunos aspectos originales del problema.]
+
+# Fuentes
+
+[fuentes bibliográficas utilizadas.]
+
+# Anexos
+
+[en caso de que sea necesario hacer tablas o resultados extensivos, será conveniente ponerlos en un anexo. No se aceptarán salidas extensas como parte principal del reporte.]
+
