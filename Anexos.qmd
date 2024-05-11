@@ -1,10 +1,12 @@
 ---
 title: "Anexos"
-format: pdf
+format: html
 editor: visual
+execute:
+  cache: true
 ---
 
-# Anexo 1
+# Anexo 1: Limpieza y adecuación de datos
 
 ```{r message=FALSE, results="hide"}
 library(rstan)
@@ -25,7 +27,6 @@ data_split <- initial_split(datos, prop = .25)
 datos <- training(data_split)
 ```
 
-### Limpieza y adecuación de datos
 
 #### Asignacion de valores numéricos a los géneros
 
@@ -186,7 +187,34 @@ selected_datos_small <- head(selected_datos,50)
 Finalmente, guardamos los datos para su uso
 
 ```{r}
+write.csv(selected_datos, "./datos/selected_datos.csv", row.names=FALSE)
 write.csv(selected_datos_small, "./datos/datos_small.csv", row.names=FALSE)
 write.csv(datos, "./datos/muestra.csv", row.names=FALSE)
 ```
+
+## Anexo 2: Modeos en `cmdstan`
+
+```{r}
+modelo_homogeneo <- cmdstan_model("./proy_homogeneo.stan")
+print(modelo_homogeneo)
+```
+
+
+```{r}
+modelo_heterogeneo <- cmdstan_model("./proy_heterogeneo.stan")
+print(modelo_heterogeneo)
+```
+
+
+```{r}
+modelo_jerarquico <- cmdstan_model("./proy_jerarquico.stan")
+print(modelo_jerarquico)
+```
+
+
+
+
+
+
+
 

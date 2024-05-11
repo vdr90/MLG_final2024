@@ -59,6 +59,7 @@ Observamos la estructura de los datos
 datos <- read.csv("datos/datos.csv") 
 datos <- as.data.frame(datos)
 selected_datos_small <- read.csv("datos/datos_small.csv") 
+selected_datos <- read.csv("datos/selected_datos.csv") 
 glimpse(datos)
 ```
 

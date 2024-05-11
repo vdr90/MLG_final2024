@@ -114,18 +114,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="análisis-de-popularidad-de-canciones-en-spotify" class="level1">
 <h1>Análisis de popularidad de canciones en spotify</h1>
-<p><strong>Falta semilla en los modelos</strong></p>
 <section id="introducción" class="level2">
 <h2 class="anchored" data-anchor-id="introducción">Introducción</h2>
 <p>De acuerdo con wikipedia, en la plataforma de Spotify se tiene acceso a más de 100 millones de canciones. Algunas canciones son más populares que otras. Si definimos a la variable 𝑌 como un rating de popularidad con 𝑌 ∈ [0, 100]. En general, entre más reproducciones recientes tenga una una canción, su rating de popularidad será mayor.</p>
 <p>Sabemos que la popularidad de una canción, no siempre es reflejo de su calidad, popularidad a largo plazo, o popularidad afuera de la audiencia de Spotify. Además del artista hay otras características que hacen popular a una canción, como la “valencia”, que define que tan alegre suena una pieza.</p>
 <p>Para el proyecto nos enfocaremos en entender:</p>
-<ul>
-<li>¿Cuál es la popularidad típica de una canción en Spotify?</li>
-<li>¿Hasta donde influye el artista en la popularidad de la canción?</li>
-<li>Para un sólo artista, ¿cómo varía la popularidad de sus canciones?</li>
-<li>¿Cómo influye la valencia en la popularidad de una canción?</li>
-</ul>
+<p><strong>Falta mencionar el modelo lineal y modelo lineal con prioris informativas</strong> * ¿Cuál es la popularidad típica de una canción en Spotify? * ¿Hasta donde influye el artista en la popularidad de la canción? * Para un sólo artista, ¿cómo varía la popularidad de sus canciones? * ¿Cómo influye la valencia en la popularidad de una canción?</p>
 <p>Métodos:</p>
 <p>Para nuestro proyecto planeamos hacer tres tipos de modelos:</p>
 <ul>
@@ -148,10 +142,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="datos">Datos</h2>
 <p>[una descripción de los datos que se usan para el modelo, ya sean datos observados o simulados y el contexto en el que se utilizan.]</p>
 <p>Observamos la estructura de los datos</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-2_ea9587ba4535fb5b692f5742da66e066">
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-2_00d3c97bab7a653550909a1d53d063a0">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>datos <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"datos/datos.csv"</span>) </span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>datos <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(datos)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(datos)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>selected_datos_small <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"datos/datos_small.csv"</span>) </span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>selected_datos <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"datos/selected_datos.csv"</span>) </span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(datos)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Rows: 114,000
 Columns: 21
@@ -178,235 +174,69 @@ $ time_signature   &lt;int&gt; 4, 4, 4, 3, 4, 4, 3, 4, 4, 4, 4, 3, 4, 4, 4, 3, 4
 $ track_genre      &lt;chr&gt; "acoustic", "acoustic", "acoustic", "acoustic", "acou…</code></pre>
 </div>
 </div>
-<p>Contamos con 114000 registros de canciones y 21 características que los representan. Sin embargo vamos a ocupar sólo una muestra de 57,000 canciones.</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-3_39037d5acd721ff17bb35dd784946c22">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">35222</span>)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>data_split <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(datos, <span class="at">prop =</span> .<span class="dv">5</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>datos <span class="ot">&lt;-</span> <span class="fu">training</span>(data_split)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">write.csv</span>(datos, <span class="st">"Path to export the DataFrame</span><span class="sc">\\</span><span class="st">File Name.csv"</span>, <span class="at">row.names=</span><span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Contamos con 114000 registros de canciones y 21 características que los representan. Sin embargo vamos a ocupar sólo una muestra de 57,000 canciones. En el Anexo 1 de este trabajo se encuentra la limpieza y adecuación de datos para su uso en la modelación de la popularidad de las canciones.</p>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-3_81a0fdc6a64690fd858f997ca193c21f">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>datos <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"datos/muestra.csv"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Obtenemos un resumen de los datos y sus variables</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-4_abce9368e1d0628749d503b878ec4e8d">
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-4_6050a89863c2cb02b7abe0d4f4a1df64">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">summary</span>(datos))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>       id           track_id           artists           album_name       
- Min.   :     0   Length:57000       Length:57000       Length:57000      
- 1st Qu.: 28317   Class :character   Class :character   Class :character  
- Median : 56956   Mode  :character   Mode  :character   Mode  :character  
- Mean   : 57037                                                           
- 3rd Qu.: 85600                                                           
- Max.   :113997                                                           
-  track_name          popularity      duration_ms        explicit        
- Length:57000       Min.   :  0.00   Min.   :   8586   Length:57000      
- Class :character   1st Qu.: 17.00   1st Qu.: 174002   Class :character  
- Mode  :character   Median : 34.00   Median : 212924   Mode  :character  
-                    Mean   : 33.15   Mean   : 228168                     
-                    3rd Qu.: 50.00   3rd Qu.: 261096                     
-                    Max.   :100.00   Max.   :5237295                     
-  danceability        energy            key            loudness      
- Min.   :0.0000   Min.   :0.0000   Min.   : 0.000   Min.   :-46.591  
- 1st Qu.:0.4560   1st Qu.:0.4730   1st Qu.: 2.000   1st Qu.:-10.015  
- Median :0.5800   Median :0.6830   Median : 5.000   Median : -7.002  
- Mean   :0.5665   Mean   :0.6409   Mean   : 5.307   Mean   : -8.269  
- 3rd Qu.:0.6950   3rd Qu.:0.8530   3rd Qu.: 8.000   3rd Qu.: -5.013  
- Max.   :0.9850   Max.   :1.0000   Max.   :11.000   Max.   :  3.156  
-      mode         speechiness       acousticness    instrumentalness   
- Min.   :0.0000   Min.   :0.00000   Min.   :0.0000   Min.   :0.0000000  
- 1st Qu.:0.0000   1st Qu.:0.03590   1st Qu.:0.0170   1st Qu.:0.0000000  
- Median :1.0000   Median :0.04880   Median :0.1680   Median :0.0000406  
- Mean   :0.6374   Mean   :0.08462   Mean   :0.3152   Mean   :0.1557287  
- 3rd Qu.:1.0000   3rd Qu.:0.08410   3rd Qu.:0.5990   3rd Qu.:0.0483250  
- Max.   :1.0000   Max.   :0.96300   Max.   :0.9960   Max.   :1.0000000  
-    liveness         valence          tempo        time_signature 
- Min.   :0.0000   Min.   :0.000   Min.   :  0.00   Min.   :0.000  
- 1st Qu.:0.0979   1st Qu.:0.258   1st Qu.: 99.45   1st Qu.:4.000  
- Median :0.1320   Median :0.464   Median :122.04   Median :4.000  
- Mean   :0.2137   Mean   :0.474   Mean   :122.16   Mean   :3.902  
- 3rd Qu.:0.2720   3rd Qu.:0.683   3rd Qu.:140.07   3rd Qu.:4.000  
- Max.   :1.0000   Max.   :0.995   Max.   :220.53   Max.   :5.000  
- track_genre       
- Length:57000      
- Class :character  
- Mode  :character  
-                   
-                   
-                   </code></pre>
+<pre><code> artists_numeric       id           track_id           artists         
+ Min.   :    1   Min.   :     0   Length:57000       Length:57000      
+ 1st Qu.: 5327   1st Qu.: 28317   Class :character   Class :character  
+ Median :10477   Median : 56956   Mode  :character   Mode  :character  
+ Mean   :10564   Mean   : 57037                                        
+ 3rd Qu.:15830   3rd Qu.: 85600                                        
+ Max.   :21163   Max.   :113997                                        
+  album_name         track_name          popularity      duration_ms     
+ Length:57000       Length:57000       Min.   :  0.00   Min.   :   8586  
+ Class :character   Class :character   1st Qu.: 17.00   1st Qu.: 174002  
+ Mode  :character   Mode  :character   Median : 34.00   Median : 212924  
+                                       Mean   : 33.15   Mean   : 228168  
+                                       3rd Qu.: 50.00   3rd Qu.: 261096  
+                                       Max.   :100.00   Max.   :5237295  
+    explicit        danceability        energy            key        
+ Min.   :0.00000   Min.   :0.0000   Min.   :0.0000   Min.   : 0.000  
+ 1st Qu.:0.00000   1st Qu.:0.4560   1st Qu.:0.4730   1st Qu.: 2.000  
+ Median :0.00000   Median :0.5800   Median :0.6830   Median : 5.000  
+ Mean   :0.08574   Mean   :0.5665   Mean   :0.6409   Mean   : 5.307  
+ 3rd Qu.:0.00000   3rd Qu.:0.6950   3rd Qu.:0.8530   3rd Qu.: 8.000  
+ Max.   :1.00000   Max.   :0.9850   Max.   :1.0000   Max.   :11.000  
+    loudness            mode         speechiness       acousticness   
+ Min.   :-46.591   Min.   :0.0000   Min.   :0.00000   Min.   :0.0000  
+ 1st Qu.:-10.015   1st Qu.:0.0000   1st Qu.:0.03590   1st Qu.:0.0170  
+ Median : -7.002   Median :1.0000   Median :0.04880   Median :0.1680  
+ Mean   : -8.269   Mean   :0.6374   Mean   :0.08462   Mean   :0.3152  
+ 3rd Qu.: -5.013   3rd Qu.:1.0000   3rd Qu.:0.08410   3rd Qu.:0.5990  
+ Max.   :  3.156   Max.   :1.0000   Max.   :0.96300   Max.   :0.9960  
+ instrumentalness       liveness         valence          tempo       
+ Min.   :0.0000000   Min.   :0.0000   Min.   :0.000   Min.   :  0.00  
+ 1st Qu.:0.0000000   1st Qu.:0.0979   1st Qu.:0.258   1st Qu.: 99.45  
+ Median :0.0000406   Median :0.1320   Median :0.464   Median :122.04  
+ Mean   :0.1557287   Mean   :0.2137   Mean   :0.474   Mean   :122.16  
+ 3rd Qu.:0.0483250   3rd Qu.:0.2720   3rd Qu.:0.683   3rd Qu.:140.07  
+ Max.   :1.0000000   Max.   :1.0000   Max.   :0.995   Max.   :220.53  
+ time_signature  track_genre        genre_factor       genre_numeric   
+ Min.   :0.000   Length:57000       Length:57000       Min.   :  1.00  
+ 1st Qu.:4.000   Class :character   Class :character   1st Qu.: 29.00  
+ Median :4.000   Mode  :character   Mode  :character   Median : 58.00  
+ Mean   :3.902                                         Mean   : 57.54  
+ 3rd Qu.:4.000                                         3rd Qu.: 86.00  
+ Max.   :5.000                                         Max.   :114.00  
+ artists_factor     popularity_artist
+ Length:57000       Min.   :  0.00   
+ Class :character   1st Qu.: 19.31   
+ Mode  :character   Median : 33.16   
+                    Mean   : 33.15   
+                    3rd Qu.: 47.00   
+                    Max.   :100.00   </code></pre>
 </div>
-</div>
-<section id="limpieza-y-adecuación-de-datos" class="level3">
-<h3 class="anchored" data-anchor-id="limpieza-y-adecuación-de-datos">Limpieza y adecuación de datos</h3>
-<section id="asignacion-de-valores-numéricos-a-los-géneros" class="level4">
-<h4 class="anchored" data-anchor-id="asignacion-de-valores-numéricos-a-los-géneros">Asignacion de valores numéricos a los géneros</h4>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-5_15620d6ac36823f5f35c573e38c34e5b">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>datos<span class="sc">$</span>genre_factor <span class="ot">&lt;-</span> <span class="fu">factor</span>(datos<span class="sc">$</span>track_genre)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>generos_unicos <span class="ot">&lt;-</span> <span class="fu">levels</span>(datos<span class="sc">$</span>genre_factor)</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co">#Diccionario</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>diccionario_generos <span class="ot">&lt;-</span> <span class="fu">setNames</span>(<span class="fu">seq_along</span>(generos_unicos), generos_unicos)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>datos<span class="sc">$</span>genre_numeric <span class="ot">&lt;-</span> diccionario_generos[datos<span class="sc">$</span>genre_factor]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-<section id="asignación-de-valores-numéricos-al-artista" class="level4">
-<h4 class="anchored" data-anchor-id="asignación-de-valores-numéricos-al-artista">Asignación de valores numéricos al artista</h4>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-6_251756a3885467a85949cc7c5e80324d">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>datos<span class="sc">$</span>artists_factor <span class="ot">&lt;-</span> <span class="fu">factor</span>(datos<span class="sc">$</span>artists)</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>artistas_unicos <span class="ot">&lt;-</span> <span class="fu">levels</span>(datos<span class="sc">$</span>artists_factor)</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">#Diccionario</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>diccionario_artists <span class="ot">&lt;-</span> <span class="fu">setNames</span>(<span class="fu">seq_along</span>(artistas_unicos), artistas_unicos)</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>datos<span class="sc">$</span>artists_numeric <span class="ot">&lt;-</span> diccionario_artists[datos<span class="sc">$</span>artists_factor]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-<section id="codificación-numérica-para-explicita" class="level4">
-<h4 class="anchored" data-anchor-id="codificación-numérica-para-explicita">Codificación numérica para explicita</h4>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-7_3598d7f9aed2592592ee32a00727c2ca">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>datos <span class="ot">&lt;-</span> <span class="fu">transform</span>(datos,</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>                <span class="at">explicit =</span> <span class="fu">ifelse</span>(explicit, <span class="dv">1</span>, <span class="dv">0</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-<section id="agregar-media-de-popularidad-por-artista" class="level4">
-<h4 class="anchored" data-anchor-id="agregar-media-de-popularidad-por-artista">Agregar media de popularidad por artista</h4>
-<ul>
-<li>Obtenemos popularidad del artista mediante la media de sus popularidades</li>
-</ul>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-8_fddaf7588ac560d49ca6f9faf56de336">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>media_popularidad_por_artista <span class="ot">&lt;-</span> <span class="fu">aggregate</span>(popularity <span class="sc">~</span> artists_numeric, <span class="at">data =</span> datos, <span class="at">FUN =</span> mean)</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(media_popularidad_por_artista)[<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="st">"popularity_artist"</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>datos <span class="ot">&lt;-</span> <span class="fu">merge</span>(datos, media_popularidad_por_artista, <span class="at">by =</span> <span class="st">"artists_numeric"</span>, <span class="at">all.x =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-</section>
-<section id="muestra-de-los-datos" class="level3">
-<h3 class="anchored" data-anchor-id="muestra-de-los-datos">Muestra de los datos</h3>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-9_add39e8def2e2e9eeea538b801ff6772">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">1000</span>  </span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># muestra aleatoria (Sólo para EDA)</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>datos <span class="ot">&lt;-</span> datos[<span class="fu">sample</span>(<span class="fu">nrow</span>(datos), n), ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
-<section id="exploración-de-los-datos" class="level3">
-<h3 class="anchored" data-anchor-id="exploración-de-los-datos">Exploración de los datos</h3>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-10_70d664645e43105aac9a051ce9b56973">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># popularidad</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> <span class="fu">factor</span>(popularity))) <span class="sc">+</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">fill =</span> <span class="st">"darkcyan"</span>, <span class="at">color =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Popularidad"</span>, <span class="at">y =</span> <span class="st">"Frecuencia"</span>, <span class="at">title =</span> <span class="st">"Distribución de la popularidad"</span>) <span class="sc">+</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>, <span class="at">vjust =</span> <span class="fl">0.5</span>, <span class="at">hjust=</span><span class="dv">1</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output-display">
-<p><img src="main_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
-</div>
-</div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-11_248509f01e75d6526a749d0d9e5d034a">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Crear los gráficos individuales</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>plot_valence <span class="ot">&lt;-</span><span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> valence, <span class="at">y =</span> popularity)) <span class="sc">+</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"pink"</span>) <span class="sc">+</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color=</span><span class="st">"black"</span>) </span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Valence"</span>, <span class="at">y =</span> <span class="st">"Popularity"</span>)</span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>plot_acousticness <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> acousticness, <span class="at">y =</span> popularity)) <span class="sc">+</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"lightblue"</span>) <span class="sc">+</span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color=</span><span class="st">"black"</span>) </span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Acousticness"</span>, <span class="at">y =</span> <span class="st">"Popularity"</span>)</span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>plot_danceability <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> danceability, <span class="at">y =</span> popularity)) <span class="sc">+</span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"gray"</span>) <span class="sc">+</span></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color=</span><span class="st">"black"</span>) </span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Danceability"</span>, <span class="at">y =</span> <span class="st">"Popularity"</span>)</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>plot_duration <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> duration_ms, <span class="at">y =</span> popularity)) <span class="sc">+</span></span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"lightgreen"</span>) <span class="sc">+</span></span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color=</span><span class="st">"black"</span>) </span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Duration (ms)"</span>, <span class="at">y =</span> <span class="st">"Popularity"</span>)</span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>plot_energy <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> energy, <span class="at">y =</span> popularity)) <span class="sc">+</span></span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"#e55b76"</span>) <span class="sc">+</span></span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color=</span><span class="st">"black"</span>) </span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Energy"</span>, <span class="at">y =</span> <span class="st">"Popularity"</span>)</span>
-<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>plot_explicit <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> explicit, <span class="at">y =</span> ..count..)) <span class="sc">+</span></span>
-<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">fill=</span><span class="st">"#2d8076"</span>) <span class="sc">+</span></span>
-<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Explicit"</span>, <span class="at">y =</span> <span class="st">"Count Explicit"</span>)</span>
-<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>plot_instrumentalness <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> instrumentalness, <span class="at">y =</span> popularity)) <span class="sc">+</span></span>
-<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"#e8dc61"</span>) <span class="sc">+</span></span>
-<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color=</span><span class="st">"black"</span>) </span>
-<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Instrumentalness"</span>, <span class="at">y =</span> <span class="st">"Popularity"</span>)</span>
-<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>plot_liveness <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> liveness, <span class="at">y =</span> popularity)) <span class="sc">+</span></span>
-<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"#4a802d"</span>) <span class="sc">+</span></span>
-<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color=</span><span class="st">"black"</span>) </span>
-<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Liveness"</span>, <span class="at">y =</span> <span class="st">"Popularity"</span>)</span>
-<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a>plot_loudness <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> loudness, <span class="at">y =</span> popularity)) <span class="sc">+</span></span>
-<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"violet"</span>) <span class="sc">+</span></span>
-<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color=</span><span class="st">"black"</span>) </span>
-<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Loudness"</span>, <span class="at">y =</span> <span class="st">"Popularity"</span>)</span>
-<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a>plot_mode <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> mode, <span class="at">y =</span> ..count..)) <span class="sc">+</span></span>
-<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">fill=</span><span class="st">"#945abb"</span>) <span class="sc">+</span></span>
-<span id="cb13-48"><a href="#cb13-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Mode"</span>, <span class="at">y =</span> <span class="st">"Count"</span>)</span>
-<span id="cb13-49"><a href="#cb13-49" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-50"><a href="#cb13-50" aria-hidden="true" tabindex="-1"></a>plot_speechiness <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> speechiness, <span class="at">y =</span> popularity)) <span class="sc">+</span></span>
-<span id="cb13-51"><a href="#cb13-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"brown"</span>) <span class="sc">+</span></span>
-<span id="cb13-52"><a href="#cb13-52" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color=</span><span class="st">"black"</span>) </span>
-<span id="cb13-53"><a href="#cb13-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Speechiness"</span>, <span class="at">y =</span> <span class="st">"Popularity"</span>)</span>
-<span id="cb13-54"><a href="#cb13-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-55"><a href="#cb13-55" aria-hidden="true" tabindex="-1"></a>plot_tempo <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(datos, <span class="fu">aes</span>(<span class="at">x =</span> tempo, <span class="at">y =</span> popularity)) <span class="sc">+</span></span>
-<span id="cb13-56"><a href="#cb13-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">color=</span><span class="st">"orange"</span>) <span class="sc">+</span></span>
-<span id="cb13-57"><a href="#cb13-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">"loess"</span>, <span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color=</span><span class="st">"black"</span>) </span>
-<span id="cb13-58"><a href="#cb13-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Tempo"</span>, <span class="at">y =</span> <span class="st">"Popularity"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-12_252a1adb61e72ff8fa3c5b7b2b160dfe">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Colocar los gráficos en un grid</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">grid.arrange</span>(</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  plot_valence, plot_acousticness, plot_danceability, plot_duration, plot_energy,</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  plot_explicit, plot_instrumentalness, plot_liveness, plot_loudness, plot_mode,</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  plot_speechiness, plot_tempo,</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">nrow =</span> <span class="dv">4</span>, <span class="at">ncol =</span> <span class="dv">3</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>`geom_smooth()` using formula = 'y ~ x'
-`geom_smooth()` using formula = 'y ~ x'
-`geom_smooth()` using formula = 'y ~ x'
-`geom_smooth()` using formula = 'y ~ x'
-`geom_smooth()` using formula = 'y ~ x'</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: The dot-dot notation (`..count..`) was deprecated in ggplot2 3.4.0.
-ℹ Please use `after_stat(count)` instead.</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>`geom_smooth()` using formula = 'y ~ x'
-`geom_smooth()` using formula = 'y ~ x'
-`geom_smooth()` using formula = 'y ~ x'
-`geom_smooth()` using formula = 'y ~ x'
-`geom_smooth()` using formula = 'y ~ x'</code></pre>
-</div>
-<div class="cell-output-display">
-<p><img src="main_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="672"></p>
-</div>
-</div>
-</section>
-</section>
-<section id="selección-de-columnas" class="level2">
-<h2 class="anchored" data-anchor-id="selección-de-columnas">Selección de columnas</h2>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-13_c5b7e854f29c3c1f5c467f8eb2a639c4">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>full_data <span class="ot">&lt;-</span> datos</span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>selected_datos <span class="ot">&lt;-</span> datos[, <span class="fu">c</span>(<span class="st">"popularity"</span>, <span class="st">"duration_ms"</span>,<span class="st">"explicit"</span>,<span class="st">"danceability"</span>,<span class="st">"tempo"</span>,<span class="st">"genre_numeric"</span>,<span class="st">"popularity_artist"</span>)]</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>selected_datos<span class="sc">$</span>explicit <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(selected_datos<span class="sc">$</span>explicit)</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>selected_datos <span class="ot">&lt;-</span> <span class="fu">head</span>(selected_datos,<span class="dv">5000</span>)</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>selected_datos_small <span class="ot">&lt;-</span> <span class="fu">head</span>(selected_datos,<span class="dv">50</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
 <section id="métodos" class="level1">
 <h1>Métodos</h1>
-<p>[los métodos que se utilizarán para resolver el problema. Los vistos en clase y si se incluye alguno que no se revisó, mencionar referencias y una descripción muy general del método.]</p>
 <section id="modelo-lineal" class="level2">
 <h2 class="anchored" data-anchor-id="modelo-lineal">Modelo lineal</h2>
 <p>Generamos un modelo lineal con priors poco informativas.</p>
@@ -414,110 +244,131 @@ $ track_genre      &lt;chr&gt; "acoustic", "acoustic", "acoustic", "acoustic", "
 <p><span class="math inline">\(y_i=\beta_0 + \beta_1 * x_i + \sigma_i​\)</span></p>
 <p>Donde:</p>
 <p><span class="math inline">\(y_i\)</span>​ es la popularidad de la observación i. <span class="math inline">\(x_i\)</span>​ es la variable predictora (por ejemplo, duración de la canción) para la observación i. <span class="math inline">\(\beta_0\)</span>​ y <span class="math inline">\(\beta_1\)</span>​ son los coeficientes del modelo. <span class="math inline">\(\sigma_i\)</span>​ es el error aleatorio asociado con la observación i, que asumiremos normalmente distribuido con media cero y varianza constante.</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-14_85022d380478450b850c175f4d08f184">
-<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>stan_code_lineal <span class="ot">&lt;-</span> <span class="st">"</span></span>
-<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="st">data {</span></span>
-<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=0&gt; N;  </span></span>
-<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=0, upper=100&gt; popularity[N];    </span></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0&gt; duration[N];      </span></span>
-<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=0, upper=1&gt; explicito[N];</span></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0, upper=1&gt; dance[N];  </span></span>
-<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0, upper=244&gt; tempo[N];     </span></span>
-<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=1, upper=114&gt; genre[N];     </span></span>
-<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="st">parameters {</span></span>
-<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="st">  real mu_popularity; </span></span>
-<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0&gt; sigma_popularity;                            </span></span>
-<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_duration;</span></span>
-<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_explicito;</span></span>
-<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_dance;</span></span>
-<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_tempo;</span></span>
-<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_genre;                             </span></span>
-<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a><span class="st">model {</span></span>
-<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a><span class="st">  // Priors</span></span>
-<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a><span class="st">  mu_popularity ~ normal(0,1);        </span></span>
-<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a><span class="st">  sigma_popularity ~ normal(0,1);         </span></span>
-<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_duration ~ normal(0,1);        </span></span>
-<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_explicito ~ normal(0,1);        </span></span>
-<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_dance ~ normal(0,1);   </span></span>
-<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_tempo ~ normal(0,1);        </span></span>
-<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_genre ~ normal(0,1);        </span></span>
-<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a><span class="st">     </span></span>
-<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a><span class="st">  // Likelihood</span></span>
-<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a><span class="st">  for (i in 1:N) {</span></span>
-<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a><span class="st">    popularity[i] ~ normal(mu_popularity + </span></span>
-<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a><span class="st">                            beta_duration * duration[i] +</span></span>
-<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a><span class="st">                            beta_explicito * explicito[i] +</span></span>
-<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a><span class="st">                            beta_dance * dance[i] +</span></span>
-<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a><span class="st">                            beta_tempo * tempo[i] +</span></span>
-<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a><span class="st">                            beta_genre * genre[i] </span></span>
-<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a><span class="st">                            , sigma_popularity); </span></span>
-<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
-<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a><span class="st">"</span></span>
-<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Compilar el modelo</span></span>
-<span id="cb19-45"><a href="#cb19-45" aria-hidden="true" tabindex="-1"></a>stan_model_lineal <span class="ot">&lt;-</span> <span class="fu">stan_model</span>(<span class="at">model_code =</span> stan_code_lineal)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><strong>ojo se mencionan dos betas pero son 5 betas en el modelo</strong></p>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-5_20256d19bca1c27d8229ee93b0ec2798">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>stan_code_lineal <span class="ot">&lt;-</span> <span class="st">"</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="st">data {</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=0&gt; N;  </span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=0, upper=100&gt; popularity[N];    </span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0&gt; duration[N];      </span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=0, upper=1&gt; explicito[N];</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0, upper=1&gt; dance[N];  </span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0, upper=244&gt; tempo[N];     </span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=1, upper=114&gt; genre[N];     </span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="st">parameters {</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="st">  real mu_popularity; </span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0&gt; sigma_popularity;                            </span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_duration;</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_explicito;</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_dance;</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_tempo;</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_genre;                             </span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="st">model {</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="st">  // Priors</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="st">  mu_popularity ~ normal(0,1);        </span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="st">  sigma_popularity ~ normal(0,1);         </span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_duration ~ normal(0,1);        </span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_explicito ~ normal(0,1);        </span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_dance ~ normal(0,1);   </span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_tempo ~ normal(0,1);        </span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_genre ~ normal(0,1);        </span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="st">     </span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="st">  // Likelihood</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="st">  for (i in 1:N) {</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="st">    popularity[i] ~ normal(mu_popularity + </span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="st">                            beta_duration * duration[i] +</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="st">                            beta_explicito * explicito[i] +</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a><span class="st">                            beta_dance * dance[i] +</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="st">                            beta_tempo * tempo[i] +</span></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a><span class="st">                            beta_genre * genre[i] </span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a><span class="st">                            , sigma_popularity); </span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a><span class="st">"</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Compilar el modelo</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>stan_model_lineal <span class="ot">&lt;-</span> <span class="fu">stan_model</span>(<span class="at">model_code =</span> stan_code_lineal)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-15_ac6b8610e84bef5ef180d3fdb152d75a">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar el modelo a los datos</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>fit_lineal <span class="ot">&lt;-</span> <span class="fu">sampling</span>(stan_model_lineal, </span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">data =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="fu">nrow</span>(selected_datos_small), </span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">popularity =</span> selected_datos_small<span class="sc">$</span>popularity,</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">duration =</span> selected_datos_small<span class="sc">$</span>duration_ms,</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">explicito =</span> selected_datos_small<span class="sc">$</span>explicit,</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">dance =</span> selected_datos_small<span class="sc">$</span>danceability,</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">tempo =</span> selected_datos_small<span class="sc">$</span>tempo,</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">genre =</span> selected_datos_small<span class="sc">$</span>genre_numeric), </span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>                       <span class="at">iter=</span><span class="dv">10000</span>, <span class="at">warmup=</span><span class="dv">3000</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-6_4dd61805bc2a5f38010119dd98a83c2d">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar el modelo a los datos</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>fit_lineal <span class="ot">&lt;-</span> <span class="fu">sampling</span>(stan_model_lineal, </span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">data =</span> <span class="fu">list</span>(<span class="at">N =</span> <span class="fu">nrow</span>(selected_datos_small), </span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">popularity =</span> selected_datos_small<span class="sc">$</span>popularity,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">duration =</span> selected_datos_small<span class="sc">$</span>duration_ms,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">explicito =</span> selected_datos_small<span class="sc">$</span>explicit,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">dance =</span> selected_datos_small<span class="sc">$</span>danceability,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">tempo =</span> selected_datos_small<span class="sc">$</span>tempo,</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">genre =</span> selected_datos_small<span class="sc">$</span>genre_numeric), </span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>                       <span class="at">iter=</span><span class="dv">10000</span>, <span class="at">warmup=</span><span class="dv">3000</span>, <span class="at">seed=</span><span class="dv">123</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Warning: There were 14166 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 10. See
+<pre><code>Warning: There were 23854 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 10. See
 https://mc-stan.org/misc/warnings.html#maximum-treedepth-exceeded</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There were 1 chains where the estimated Bayesian Fraction of Missing Information was low. See
+https://mc-stan.org/misc/warnings.html#bfmi-low</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: Examine the pairs() plot to diagnose sampling problems</code></pre>
 </div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: The largest R-hat is 1.36, indicating chains have not mixed.
+Running the chains for more iterations may help. See
+https://mc-stan.org/misc/warnings.html#r-hat</code></pre>
 </div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-16_d3bca83be951580320895d1a30a4b19e">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ver resultados</span></span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fit_lineal)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
+Running the chains for more iterations may help. See
+https://mc-stan.org/misc/warnings.html#bulk-ess</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
+Running the chains for more iterations may help. See
+https://mc-stan.org/misc/warnings.html#tail-ess</code></pre>
+</div>
+</div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-7_aa11aaca2497b4c1b2ab734c124fd6a5">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ver resultados</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fit_lineal)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Inference for Stan model: anon_model.
 4 chains, each with iter=10000; warmup=3000; thin=1; 
 post-warmup draws per chain=7000, total post-warmup draws=28000.
 
-                    mean se_mean   sd    2.5%     25%     50%     75%   97.5%
-mu_popularity       0.49    0.02 1.00   -1.44   -0.20    0.48    1.16    2.48
-sigma_popularity   12.07    0.00 0.46   11.21   11.75   12.06   12.37   13.01
-beta_duration       0.00    0.00 0.00    0.00    0.00    0.00    0.00    0.00
-beta_explicito      0.46    0.04 1.02   -1.54   -0.23    0.46    1.16    2.38
-beta_dance          0.47    0.02 1.00   -1.45   -0.22    0.46    1.15    2.43
-beta_tempo          0.16    0.00 0.04    0.09    0.13    0.16    0.18    0.23
-beta_genre          0.19    0.00 0.05    0.09    0.15    0.19    0.22    0.29
-lp__             -294.24    0.03 1.88 -298.78 -295.27 -293.90 -292.86 -291.57
-                 n_eff Rhat
-mu_popularity     2897    1
-sigma_popularity 22265    1
-beta_duration    27901    1
-beta_explicito     547    1
-beta_dance        1842    1
-beta_tempo       17956    1
-beta_genre       19646    1
-lp__              3821    1
+                    mean se_mean       sd    2.5%     25%     50%     75%
+mu_popularity       0.36    0.32     0.97   -1.20   -0.41    0.20    1.04
+sigma_popularity    9.98    0.09     1.22    9.00    9.59    9.90   10.23
+beta_duration       0.00    0.00     0.00    0.00    0.00    0.00    0.00
+beta_explicito      0.46    0.58     1.16   -1.79   -0.41    0.42    1.81
+beta_dance         -0.03    0.61     1.18   -1.46   -1.42    0.02    0.88
+beta_tempo          0.08    0.02     0.20    0.02    0.08    0.10    0.12
+beta_genre          0.04    0.03     0.19   -0.30    0.03    0.07    0.10
+lp__             -726.42  617.25 10499.90 -266.78 -238.75 -237.10 -235.54
+                   97.5% n_eff Rhat
+mu_popularity       2.44     9 1.15
+sigma_popularity   11.03   183 1.02
+beta_duration       0.00    42 1.06
+beta_explicito      1.84     4 1.41
+beta_dance          2.25     4 1.42
+beta_tempo          0.18    86 1.04
+beta_genre          0.17    35 1.09
+lp__             -233.99   289 1.01
 
-Samples were drawn using NUTS(diag_e) at Fri May 10 14:51:41 2024.
+Samples were drawn using NUTS(diag_e) at Fri May 10 20:16:52 2024.
 For each parameter, n_eff is a crude measure of effective sample size,
 and Rhat is the potential scale reduction factor on split chains (at 
 convergence, Rhat=1).</code></pre>
 </div>
 </div>
 <p>Observamos intervalos de credibilidad</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-17_4d2af9e5fd5396aaba7f1ccb38be40fe">
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>extract_lineal <span class="ot">&lt;-</span> <span class="fu">extract</span>(fit_lineal)</span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="fu">stan_plot</span>(fit_lineal, <span class="at">prob =</span> <span class="fl">0.95</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-8_5ccb78beffb7802c3d493b4ce45b56c4">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>extract_lineal <span class="ot">&lt;-</span> rstan<span class="sc">::</span><span class="fu">extract</span>(fit_lineal, <span class="at">permuted =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="fu">stan_plot</span>(fit_lineal, <span class="at">prob =</span> <span class="fl">0.95</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>ci_level: 0.8 (80% intervals)</code></pre>
 </div>
@@ -525,7 +376,7 @@ convergence, Rhat=1).</code></pre>
 <pre><code>outer_level: 0.95 (95% intervals)</code></pre>
 </div>
 <div class="cell-output-display">
-<p><img src="main_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid" width="672"></p>
+<p><img src="main_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 <p>Podemos ver tambien, al observar los coeficientes, que el género y el grado de “daceability” tienen una mayor influencia sobre la popularidad de una canción.</p>
@@ -575,81 +426,107 @@ convergence, Rhat=1).</code></pre>
 </ul></li>
 </ul>
 <p>Utilizaremos un modelo lineal generalizado (GLM) donde la popularidad sea una función lineal de las demás variables, teniendo en cuenta la naturaleza discreta de la popularidad (valores enteros entre 0 y 100).</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-18_6df6aa23f74326a4c09e01db6b692bff">
-<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>  stan_code <span class="ot">&lt;-</span> <span class="st">"</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="st">  data {</span></span>
-<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="st">    int&lt;lower=0&gt; N;               </span></span>
-<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="st">    int&lt;lower=0, upper=100&gt; popularity[N];  </span></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; duration_ms[N];      </span></span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="st">    int&lt;lower=0, upper=1&gt; explicito[N];</span></span>
-<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0, upper=1&gt; danceability[N];  </span></span>
-<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0, upper=244&gt; tempo[N];     </span></span>
-<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=1, upper=114&gt; genre[N];        </span></span>
-<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
-<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a><span class="st">  parameters {</span></span>
-<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a><span class="st">    real phi_popularity;</span></span>
-<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; p_duration;        </span></span>
-<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0, upper=1&gt; p_explicit;  </span></span>
-<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0, upper=1&gt; p_dance; </span></span>
-<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; mu_tempo;             </span></span>
-<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; sigma_tempo;  </span></span>
-<span id="cb28-19"><a href="#cb28-19" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; mu_genre;             </span></span>
-<span id="cb28-20"><a href="#cb28-20" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; sigma_genre;        </span></span>
-<span id="cb28-21"><a href="#cb28-21" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; p_tempo;                </span></span>
-<span id="cb28-22"><a href="#cb28-22" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; p_genre;              </span></span>
-<span id="cb28-23"><a href="#cb28-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-24"><a href="#cb28-24" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
-<span id="cb28-25"><a href="#cb28-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-26"><a href="#cb28-26" aria-hidden="true" tabindex="-1"></a><span class="st">  model {</span></span>
-<span id="cb28-27"><a href="#cb28-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-28"><a href="#cb28-28" aria-hidden="true" tabindex="-1"></a><span class="st">    // Priors</span></span>
-<span id="cb28-29"><a href="#cb28-29" aria-hidden="true" tabindex="-1"></a><span class="st">    phi_popularity ~ normal(0, 1);</span></span>
-<span id="cb28-30"><a href="#cb28-30" aria-hidden="true" tabindex="-1"></a><span class="st">    p_duration ~ exponential(180000);  </span></span>
-<span id="cb28-31"><a href="#cb28-31" aria-hidden="true" tabindex="-1"></a><span class="st">    p_explicit ~ beta(2,2);                </span></span>
-<span id="cb28-32"><a href="#cb28-32" aria-hidden="true" tabindex="-1"></a><span class="st">    p_dance ~ beta(1, 1);           </span></span>
-<span id="cb28-33"><a href="#cb28-33" aria-hidden="true" tabindex="-1"></a><span class="st">    mu_tempo ~ normal(120, 30);               </span></span>
-<span id="cb28-34"><a href="#cb28-34" aria-hidden="true" tabindex="-1"></a><span class="st">    sigma_tempo ~ cauchy(0, 5);      </span></span>
-<span id="cb28-35"><a href="#cb28-35" aria-hidden="true" tabindex="-1"></a><span class="st">    mu_genre ~ normal(120, 30);               </span></span>
-<span id="cb28-36"><a href="#cb28-36" aria-hidden="true" tabindex="-1"></a><span class="st">    sigma_genre ~ cauchy(0, 5);  </span></span>
-<span id="cb28-37"><a href="#cb28-37" aria-hidden="true" tabindex="-1"></a><span class="st">    p_tempo ~ normal(mu_tempo, sigma_tempo);</span></span>
-<span id="cb28-38"><a href="#cb28-38" aria-hidden="true" tabindex="-1"></a><span class="st">    p_genre ~ normal(mu_genre, sigma_genre);</span></span>
-<span id="cb28-39"><a href="#cb28-39" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-40"><a href="#cb28-40" aria-hidden="true" tabindex="-1"></a><span class="st">    // Likelihood</span></span>
-<span id="cb28-41"><a href="#cb28-41" aria-hidden="true" tabindex="-1"></a><span class="st">    for (i in 1:N) {</span></span>
-<span id="cb28-42"><a href="#cb28-42" aria-hidden="true" tabindex="-1"></a><span class="st">      real mu_popularity;</span></span>
-<span id="cb28-43"><a href="#cb28-43" aria-hidden="true" tabindex="-1"></a><span class="st">      </span></span>
-<span id="cb28-44"><a href="#cb28-44" aria-hidden="true" tabindex="-1"></a><span class="st">      mu_popularity = p_duration * duration_ms[i] + </span></span>
-<span id="cb28-45"><a href="#cb28-45" aria-hidden="true" tabindex="-1"></a><span class="st">                      p_explicit * explicito[i] +</span></span>
-<span id="cb28-46"><a href="#cb28-46" aria-hidden="true" tabindex="-1"></a><span class="st">                      p_dance * danceability[i] +</span></span>
-<span id="cb28-47"><a href="#cb28-47" aria-hidden="true" tabindex="-1"></a><span class="st">                      p_tempo * tempo[i] +</span></span>
-<span id="cb28-48"><a href="#cb28-48" aria-hidden="true" tabindex="-1"></a><span class="st">                      p_genre * genre[i];</span></span>
-<span id="cb28-49"><a href="#cb28-49" aria-hidden="true" tabindex="-1"></a><span class="st">      </span></span>
-<span id="cb28-50"><a href="#cb28-50" aria-hidden="true" tabindex="-1"></a><span class="st">      popularity[i] ~ neg_binomial_2(mu_popularity, phi_popularity); // Distribución binomial negativa para popularidad</span></span>
-<span id="cb28-51"><a href="#cb28-51" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
-<span id="cb28-52"><a href="#cb28-52" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
-<span id="cb28-53"><a href="#cb28-53" aria-hidden="true" tabindex="-1"></a><span class="st">  "</span></span>
-<span id="cb28-54"><a href="#cb28-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-55"><a href="#cb28-55" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-56"><a href="#cb28-56" aria-hidden="true" tabindex="-1"></a><span class="co"># Compilar el modelo</span></span>
-<span id="cb28-57"><a href="#cb28-57" aria-hidden="true" tabindex="-1"></a>stan_model <span class="ot">&lt;-</span> <span class="fu">stan_model</span>(<span class="at">model_code =</span> stan_code)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-19_5b72fbc43264f9dc4f49da02acf51a07">
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>stan_data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">N =</span> <span class="fu">nrow</span>(selected_datos_small),</span>
-<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">popularity =</span> selected_datos_small<span class="sc">$</span>popularity,</span>
-<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">duration_ms =</span> selected_datos_small<span class="sc">$</span>duration_ms,</span>
-<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">explicito =</span> selected_datos_small<span class="sc">$</span>explicit,</span>
-<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">danceability =</span> selected_datos_small<span class="sc">$</span>danceability,</span>
-<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">tempo =</span> selected_datos_small<span class="sc">$</span>tempo,</span>
-<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">genre =</span> selected_datos_small<span class="sc">$</span>genre_numeric</span>
-<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar el modelo a los datos</span></span>
-<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">sampling</span>(stan_model, <span class="at">data =</span> stan_data, <span class="at">chains =</span> <span class="dv">4</span>, <span class="at">iter =</span> <span class="dv">50000</span>, <span class="at">warmup =</span> <span class="dv">5000</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-9_a67a9512a510f9c238bd2f41243f3ea5">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>  stan_code <span class="ot">&lt;-</span> <span class="st">"</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="st">  data {</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="st">    int&lt;lower=0&gt; N;               </span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="st">    int&lt;lower=0, upper=100&gt; popularity[N];  </span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; duration_ms[N];      </span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="st">    int&lt;lower=0, upper=1&gt; explicito[N];</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0, upper=1&gt; danceability[N];  </span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0, upper=244&gt; tempo[N];     </span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=1, upper=114&gt; genre[N];        </span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="st">  parameters {</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="st">    real phi_popularity;</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; p_duration;        </span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0, upper=1&gt; p_explicit;  </span></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0, upper=1&gt; p_dance; </span></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; mu_tempo;             </span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; sigma_tempo;  </span></span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; mu_genre;             </span></span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; sigma_genre;        </span></span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; p_tempo;                </span></span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a><span class="st">    real&lt;lower=0&gt; p_genre;              </span></span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a><span class="st">  model {</span></span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a><span class="st">    // Priors</span></span>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a><span class="st">    phi_popularity ~ normal(0, 1);</span></span>
+<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a><span class="st">    p_duration ~ exponential(180000);  </span></span>
+<span id="cb20-31"><a href="#cb20-31" aria-hidden="true" tabindex="-1"></a><span class="st">    p_explicit ~ beta(2,2);                </span></span>
+<span id="cb20-32"><a href="#cb20-32" aria-hidden="true" tabindex="-1"></a><span class="st">    p_dance ~ beta(1, 1);           </span></span>
+<span id="cb20-33"><a href="#cb20-33" aria-hidden="true" tabindex="-1"></a><span class="st">    mu_tempo ~ normal(120, 30);               </span></span>
+<span id="cb20-34"><a href="#cb20-34" aria-hidden="true" tabindex="-1"></a><span class="st">    sigma_tempo ~ cauchy(0, 5);      </span></span>
+<span id="cb20-35"><a href="#cb20-35" aria-hidden="true" tabindex="-1"></a><span class="st">    mu_genre ~ normal(120, 30);               </span></span>
+<span id="cb20-36"><a href="#cb20-36" aria-hidden="true" tabindex="-1"></a><span class="st">    sigma_genre ~ cauchy(0, 5);  </span></span>
+<span id="cb20-37"><a href="#cb20-37" aria-hidden="true" tabindex="-1"></a><span class="st">    p_tempo ~ normal(mu_tempo, sigma_tempo);</span></span>
+<span id="cb20-38"><a href="#cb20-38" aria-hidden="true" tabindex="-1"></a><span class="st">    p_genre ~ normal(mu_genre, sigma_genre);</span></span>
+<span id="cb20-39"><a href="#cb20-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-40"><a href="#cb20-40" aria-hidden="true" tabindex="-1"></a><span class="st">    // Likelihood</span></span>
+<span id="cb20-41"><a href="#cb20-41" aria-hidden="true" tabindex="-1"></a><span class="st">    for (i in 1:N) {</span></span>
+<span id="cb20-42"><a href="#cb20-42" aria-hidden="true" tabindex="-1"></a><span class="st">      real mu_popularity;</span></span>
+<span id="cb20-43"><a href="#cb20-43" aria-hidden="true" tabindex="-1"></a><span class="st">      </span></span>
+<span id="cb20-44"><a href="#cb20-44" aria-hidden="true" tabindex="-1"></a><span class="st">      mu_popularity = p_duration * duration_ms[i] + </span></span>
+<span id="cb20-45"><a href="#cb20-45" aria-hidden="true" tabindex="-1"></a><span class="st">                      p_explicit * explicito[i] +</span></span>
+<span id="cb20-46"><a href="#cb20-46" aria-hidden="true" tabindex="-1"></a><span class="st">                      p_dance * danceability[i] +</span></span>
+<span id="cb20-47"><a href="#cb20-47" aria-hidden="true" tabindex="-1"></a><span class="st">                      p_tempo * tempo[i] +</span></span>
+<span id="cb20-48"><a href="#cb20-48" aria-hidden="true" tabindex="-1"></a><span class="st">                      p_genre * genre[i];</span></span>
+<span id="cb20-49"><a href="#cb20-49" aria-hidden="true" tabindex="-1"></a><span class="st">      </span></span>
+<span id="cb20-50"><a href="#cb20-50" aria-hidden="true" tabindex="-1"></a><span class="st">      popularity[i] ~ neg_binomial_2(mu_popularity, phi_popularity); // Distribución binomial negativa para popularidad</span></span>
+<span id="cb20-51"><a href="#cb20-51" aria-hidden="true" tabindex="-1"></a><span class="st">    }</span></span>
+<span id="cb20-52"><a href="#cb20-52" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
+<span id="cb20-53"><a href="#cb20-53" aria-hidden="true" tabindex="-1"></a><span class="st">  "</span></span>
+<span id="cb20-54"><a href="#cb20-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-55"><a href="#cb20-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-56"><a href="#cb20-56" aria-hidden="true" tabindex="-1"></a><span class="co"># Compilar el modelo</span></span>
+<span id="cb20-57"><a href="#cb20-57" aria-hidden="true" tabindex="-1"></a>stan_model <span class="ot">&lt;-</span> <span class="fu">stan_model</span>(<span class="at">model_code =</span> stan_code)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Warning: There were 17 divergent transitions after warmup. See
+<pre><code>Trying to compile a simple C file</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Running /usr/lib/R/bin/R CMD SHLIB foo.c
+using C compiler: ‘gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’
+gcc -I"/usr/share/R/include" -DNDEBUG   -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/Rcpp/1.0.12/5ea2700d21e038ace58269ecdbeb9ec0/Rcpp/include/"  -I"/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/"  -I"/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/unsupported"  -I"/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/BH/include" -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/src/"  -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/"  -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/RcppParallel/5.1.7/a45594a00f5dbb073d5ec9f48592a08a/RcppParallel/include/"  -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/rstan/2.32.5/378a10b6373822761ec78021c105b059/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -D_HAS_AUTO_PTR_ETC=0  -include '/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1       -fpic  -g -O2 -ffile-prefix-map=/build/r-base-14Q6vq/r-base-4.3.3=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c foo.c -o foo.o
+In file included from /home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Core:88,
+                 from /home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Dense:1,
+                 from /home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22,
+                 from &lt;command-line&gt;:
+/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name ‘namespace’
+  628 | namespace Eigen {
+      | ^~~~~~~~~
+/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:17: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘{’ token
+  628 | namespace Eigen {
+      |                 ^
+In file included from /home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Dense:1,
+                 from /home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22,
+                 from &lt;command-line&gt;:
+/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Core:96:10: fatal error: complex: No such file or directory
+   96 | #include &lt;complex&gt;
+      |          ^~~~~~~~~
+compilation terminated.
+make: *** [/usr/lib/R/etc/Makeconf:191: foo.o] Error 1</code></pre>
+</div>
+</div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-10_a3855ba57254c10d9404d4dca48abacc">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>stan_data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">N =</span> <span class="fu">nrow</span>(selected_datos_small),</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">popularity =</span> selected_datos_small<span class="sc">$</span>popularity,</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">duration_ms =</span> selected_datos_small<span class="sc">$</span>duration_ms,</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">explicito =</span> selected_datos_small<span class="sc">$</span>explicit,</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">danceability =</span> selected_datos_small<span class="sc">$</span>danceability,</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">tempo =</span> selected_datos_small<span class="sc">$</span>tempo,</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">genre =</span> selected_datos_small<span class="sc">$</span>genre_numeric</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar el modelo a los datos</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>fit <span class="ot">&lt;-</span> <span class="fu">sampling</span>(stan_model, <span class="at">data =</span> stan_data, <span class="at">chains =</span> <span class="dv">4</span>, <span class="at">iter =</span> <span class="dv">50000</span>, <span class="at">warmup =</span> <span class="dv">5000</span>, <span class="at">seed=</span><span class="dv">123</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: There were 27 divergent transitions after warmup. See
 https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 to find out why this is a problem and how to eliminate them.</code></pre>
 </div>
@@ -657,48 +534,48 @@ to find out why this is a problem and how to eliminate them.</code></pre>
 <pre><code>Warning: Examine the pairs() plot to diagnose sampling problems</code></pre>
 </div>
 </div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-20_ad087619508cd30d2e52b85bdb82ef5c">
-<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># resultados</span></span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-11_ba388e38b7bd747e11e7c51ae291c12f">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># resultados</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Inference for Stan model: anon_model.
 4 chains, each with iter=50000; warmup=5000; thin=1; 
 post-warmup draws per chain=45000, total post-warmup draws=180000.
 
                   mean se_mean     sd    2.5%     25%     50%     75%   97.5%
-phi_popularity    0.96    0.00   0.20    0.62    0.82    0.95    1.08    1.39
+phi_popularity    1.13    0.00   0.25    0.71    0.95    1.11    1.28    1.67
 p_duration        0.00    0.00   0.00    0.00    0.00    0.00    0.00    0.00
-p_explicit        0.50    0.00   0.22    0.10    0.33    0.50    0.68    0.91
+p_explicit        0.50    0.00   0.22    0.09    0.33    0.50    0.68    0.91
 p_dance           0.51    0.00   0.29    0.03    0.26    0.51    0.76    0.98
-mu_tempo         97.39    0.17  36.48   12.64   75.02   99.49  122.28  163.72
-sigma_tempo     121.45    0.65 195.87   11.43   52.15   81.79  132.94  458.36
-mu_genre         97.26    0.16  36.64   11.44   74.96   99.55  122.23  163.99
-sigma_genre     121.95    0.68 214.87   10.69   51.97   81.45  132.96  458.16
-p_tempo           0.19    0.00   0.05    0.11    0.16    0.19    0.22    0.30
-p_genre           0.22    0.00   0.13    0.02    0.13    0.20    0.29    0.51
-lp__           -255.68    0.02   2.76 -262.19 -257.26 -255.25 -253.65 -251.56
+mu_tempo         97.31    0.15  36.64   11.33   75.08   99.45  122.38  164.00
+sigma_tempo     121.43    0.60 196.55   10.54   52.13   81.55  133.45  460.63
+mu_genre         97.53    0.15  36.34   12.82   75.33   99.63  122.23  163.91
+sigma_genre     122.58    0.81 252.06   11.62   52.46   82.04  133.18  455.81
+p_tempo           0.17    0.00   0.05    0.08    0.14    0.17    0.20    0.27
+p_genre           0.15    0.00   0.10    0.01    0.07    0.13    0.20    0.38
+lp__           -251.87    0.01   2.77 -258.40 -253.45 -251.43 -249.83 -247.73
                 n_eff Rhat
-phi_popularity 141581    1
-p_duration     195388    1
-p_explicit     195104    1
-p_dance        199182    1
-mu_tempo        43588    1
-sigma_tempo     91729    1
-mu_genre        52432    1
-sigma_genre    100303    1
-p_tempo        113255    1
-p_genre        130313    1
-lp__            33453    1
+phi_popularity 128584    1
+p_duration     177772    1
+p_explicit     157757    1
+p_dance        169707    1
+mu_tempo        58869    1
+sigma_tempo    106370    1
+mu_genre        57253    1
+sigma_genre     96304    1
+p_tempo         97798    1
+p_genre        101982    1
+lp__            37250    1
 
-Samples were drawn using NUTS(diag_e) at Fri May 10 14:54:24 2024.
+Samples were drawn using NUTS(diag_e) at Fri May 10 20:19:59 2024.
 For each parameter, n_eff is a crude measure of effective sample size,
 and Rhat is the potential scale reduction factor on split chains (at 
 convergence, Rhat=1).</code></pre>
 </div>
 </div>
 <p>Observamos intervalos de credibilidad</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-21_0a0d8dc322153d08f79d726efaae3ee1">
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stan_plot</span>(fit, <span class="at">prob =</span> <span class="fl">0.95</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-12_4be58895289a6c402d98ff8bd388e37f">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stan_plot</span>(fit, <span class="at">prob =</span> <span class="fl">0.95</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>ci_level: 0.8 (80% intervals)</code></pre>
 </div>
@@ -706,7 +583,7 @@ convergence, Rhat=1).</code></pre>
 <pre><code>outer_level: 0.95 (95% intervals)</code></pre>
 </div>
 <div class="cell-output-display">
-<p><img src="main_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid" width="672"></p>
+<p><img src="main_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 <p>Notamos que entre los coeficientes más altos se encuentran: genero, “danceability” y “explicit”.</p>
@@ -714,75 +591,101 @@ convergence, Rhat=1).</code></pre>
 <section id="modelo-de-popularidad-individual" class="level2">
 <h2 class="anchored" data-anchor-id="modelo-de-popularidad-individual">Modelo de popularidad individual</h2>
 <p>El siguente modelo considerará solo la popularidad del artista como predictor de la popularidad de la canción.</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-22_7639c3b7a2519332d2fe7e920c71bd54">
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>individual_code <span class="ot">&lt;-</span><span class="st">"</span></span>
-<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="st">data {</span></span>
-<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=0&gt; N;                </span></span>
-<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="st">  vector[N] popularity_artist;   </span></span>
-<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="st">  vector[N] popularity;     </span></span>
-<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a><span class="st">parameters {</span></span>
-<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a><span class="st">  real intercept;                 </span></span>
-<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_artist;               </span></span>
-<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0&gt; sigma;            </span></span>
-<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a><span class="st">model {</span></span>
-<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a><span class="st">  // Priors</span></span>
-<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a><span class="st">  intercept ~ normal(0, 1);      </span></span>
-<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_artist ~ normal(0, 1);     </span></span>
-<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a><span class="st">  sigma ~ normal(0, 1);           </span></span>
-<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a><span class="st">  // Likelihood</span></span>
-<span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a><span class="st">  for (i in 1:N) {</span></span>
-<span id="cb37-22"><a href="#cb37-22" aria-hidden="true" tabindex="-1"></a><span class="st">    // Modelo lineal</span></span>
-<span id="cb37-23"><a href="#cb37-23" aria-hidden="true" tabindex="-1"></a><span class="st">    popularity[i] ~ normal(intercept + beta_artist * popularity_artist[i], sigma);</span></span>
-<span id="cb37-24"><a href="#cb37-24" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
-<span id="cb37-25"><a href="#cb37-25" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb37-26"><a href="#cb37-26" aria-hidden="true" tabindex="-1"></a><span class="st">"</span></span>
-<span id="cb37-27"><a href="#cb37-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-28"><a href="#cb37-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb37-29"><a href="#cb37-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Compilar el modelo</span></span>
-<span id="cb37-30"><a href="#cb37-30" aria-hidden="true" tabindex="-1"></a>individual_model <span class="ot">&lt;-</span> <span class="fu">stan_model</span>(<span class="at">model_code =</span> individual_code)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-13_776810ecc067f65913a7303b35e0eb8c">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>individual_code <span class="ot">&lt;-</span><span class="st">"</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="st">data {</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=0&gt; N;                </span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="st">  vector[N] popularity_artist;   </span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="st">  vector[N] popularity;     </span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="st">parameters {</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="st">  real intercept;                 </span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_artist;               </span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0&gt; sigma;            </span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a><span class="st">model {</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a><span class="st">  // Priors</span></span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a><span class="st">  intercept ~ normal(0, 1);      </span></span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_artist ~ normal(0, 1);     </span></span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a><span class="st">  sigma ~ normal(0, 1);           </span></span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a><span class="st">  // Likelihood</span></span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a><span class="st">  for (i in 1:N) {</span></span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a><span class="st">    // Modelo lineal</span></span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a><span class="st">    popularity[i] ~ normal(intercept + beta_artist * popularity_artist[i], sigma);</span></span>
+<span id="cb31-24"><a href="#cb31-24" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
+<span id="cb31-25"><a href="#cb31-25" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb31-26"><a href="#cb31-26" aria-hidden="true" tabindex="-1"></a><span class="st">"</span></span>
+<span id="cb31-27"><a href="#cb31-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-28"><a href="#cb31-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-29"><a href="#cb31-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Compilar el modelo</span></span>
+<span id="cb31-30"><a href="#cb31-30" aria-hidden="true" tabindex="-1"></a>individual_model <span class="ot">&lt;-</span> <span class="fu">stan_model</span>(<span class="at">model_code =</span> individual_code)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Trying to compile a simple C file</code></pre>
 </div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-23_125ab3d0f564035768362214084bab1c">
-<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>stan_indiv_data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">N =</span> <span class="fu">nrow</span>(selected_datos),</span>
-<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">popularity =</span> selected_datos<span class="sc">$</span>popularity,</span>
-<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">popularity_artist =</span> selected_datos<span class="sc">$</span>popularity_artist</span>
-<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar el modelo a los datos</span></span>
-<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>individual_fit <span class="ot">&lt;-</span> <span class="fu">sampling</span>(individual_model, <span class="at">data =</span> stan_indiv_data, <span class="at">chains =</span> <span class="dv">4</span>, <span class="at">iter =</span> <span class="dv">10000</span>, <span class="at">warmup =</span> <span class="dv">500</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Running /usr/lib/R/bin/R CMD SHLIB foo.c
+using C compiler: ‘gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’
+gcc -I"/usr/share/R/include" -DNDEBUG   -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/Rcpp/1.0.12/5ea2700d21e038ace58269ecdbeb9ec0/Rcpp/include/"  -I"/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/"  -I"/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/unsupported"  -I"/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/BH/include" -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/src/"  -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/"  -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/RcppParallel/5.1.7/a45594a00f5dbb073d5ec9f48592a08a/RcppParallel/include/"  -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/rstan/2.32.5/378a10b6373822761ec78021c105b059/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -D_HAS_AUTO_PTR_ETC=0  -include '/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1       -fpic  -g -O2 -ffile-prefix-map=/build/r-base-14Q6vq/r-base-4.3.3=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c foo.c -o foo.o
+In file included from /home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Core:88,
+                 from /home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Dense:1,
+                 from /home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22,
+                 from &lt;command-line&gt;:
+/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name ‘namespace’
+  628 | namespace Eigen {
+      | ^~~~~~~~~
+/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:17: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘{’ token
+  628 | namespace Eigen {
+      |                 ^
+In file included from /home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Dense:1,
+                 from /home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22,
+                 from &lt;command-line&gt;:
+/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Core:96:10: fatal error: complex: No such file or directory
+   96 | #include &lt;complex&gt;
+      |          ^~~~~~~~~
+compilation terminated.
+make: *** [/usr/lib/R/etc/Makeconf:191: foo.o] Error 1</code></pre>
 </div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-24_95a763dce95a8b6b4e749507ff68d169">
-<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(individual_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-14_feb88b134b5203631d120d9df67b67b7">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>stan_indiv_data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">N =</span> <span class="fu">nrow</span>(selected_datos),</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">popularity =</span> selected_datos<span class="sc">$</span>popularity,</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">popularity_artist =</span> selected_datos<span class="sc">$</span>popularity_artist</span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar el modelo a los datos</span></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>individual_fit <span class="ot">&lt;-</span> <span class="fu">sampling</span>(individual_model, <span class="at">data =</span> stan_indiv_data, <span class="at">chains =</span> <span class="dv">4</span>, <span class="at">iter =</span> <span class="dv">10000</span>, <span class="at">warmup =</span> <span class="dv">500</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-15_f68af880a0be09a7fccef2cfd00335ea">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(individual_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Inference for Stan model: anon_model.
 4 chains, each with iter=10000; warmup=500; thin=1; 
 post-warmup draws per chain=9500, total post-warmup draws=38000.
 
-                mean se_mean   sd     2.5%      25%      50%      75%    97.5%
-intercept      -0.23    0.00 0.59    -1.39    -0.63    -0.23     0.17     0.93
-beta_artist     0.99    0.00 0.02     0.96     0.98     0.99     1.01     1.03
-sigma          11.43    0.00 0.23    10.99    11.28    11.43    11.59    11.89
-lp__        -3064.72    0.01 1.23 -3067.90 -3065.26 -3064.40 -3063.83 -3063.33
-            n_eff Rhat
-intercept   15313    1
-beta_artist 15563    1
-sigma       23962    1
-lp__        14822    1
+                 mean se_mean   sd      2.5%       25%       50%       75%
+intercept        0.00    0.00 0.29     -0.57     -0.19      0.00      0.20
+beta_artist      1.00    0.00 0.01      0.99      0.99      1.00      1.00
+sigma           10.85    0.00 0.11     10.64     10.78     10.85     10.92
+lp__        -14535.60    0.01 1.23 -14538.77 -14536.16 -14535.29 -14534.70
+                97.5% n_eff Rhat
+intercept        0.56 13853    1
+beta_artist      1.01 14431    1
+sigma           11.06 21880    1
+lp__        -14534.21 14983    1
 
-Samples were drawn using NUTS(diag_e) at Fri May 10 14:56:37 2024.
+Samples were drawn using NUTS(diag_e) at Fri May 10 20:30:25 2024.
 For each parameter, n_eff is a crude measure of effective sample size,
 and Rhat is the potential scale reduction factor on split chains (at 
 convergence, Rhat=1).</code></pre>
 </div>
 </div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-25_f9e6f7b522c34d807ba306caf915cf2d">
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stan_plot</span>(individual_fit, <span class="at">prob =</span> <span class="fl">0.95</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-16_5508bc85c0ab14c75ab501c3f64c198b">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stan_plot</span>(individual_fit, <span class="at">prob =</span> <span class="fl">0.95</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>ci_level: 0.8 (80% intervals)</code></pre>
 </div>
@@ -790,140 +693,166 @@ convergence, Rhat=1).</code></pre>
 <pre><code>outer_level: 0.95 (95% intervals)</code></pre>
 </div>
 <div class="cell-output-display">
-<p><img src="main_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid" width="672"></p>
+<p><img src="main_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 <p>Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.</p>
 <p>En el siguiente gráfico puede observarse un intervalod el 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-26_92d8016ca62b7d84cbd60279bd2c1354">
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>avg_popularity_artists <span class="ot">&lt;-</span> <span class="fu">mean</span>(selected_datos<span class="sc">$</span>popularity_artist)</span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>n_songs <span class="ot">=</span> <span class="dv">20</span></span>
-<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculamos las predicciones con los coeficientes obtenidos</span></span>
-<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>comp_simul <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
-<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_songs) {</span>
-<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>  mu_pred <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">extract</span>(individual_fit)<span class="sc">$</span>intercept) <span class="sc">+</span> </span>
-<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>             <span class="fu">mean</span>(<span class="fu">extract</span>(individual_fit)<span class="sc">$</span>beta_artist) <span class="sc">*</span> avg_popularity_artists</span>
-<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a>             </span>
-<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a>  pred_simuladas <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10000</span>, <span class="at">mean =</span> mu_pred, <span class="at">sd =</span> <span class="fu">mean</span>(<span class="fu">extract</span>(individual_fit)<span class="sc">$</span>sigma))</span>
-<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a>  comp_simul[[i]] <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">real_popularity =</span> datos<span class="sc">$</span>popularity[i], <span class="at">simulated_popularity =</span> pred_simuladas)</span>
-<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-17_b33b83e221b7f3cf6cef4ef6f2286e42">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>avg_popularity_artists <span class="ot">&lt;-</span> <span class="fu">mean</span>(selected_datos<span class="sc">$</span>popularity_artist)</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>n_songs <span class="ot">=</span> <span class="dv">20</span></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculamos las predicciones con los coeficientes obtenidos</span></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>comp_simul <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_songs) {</span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>  mu_pred <span class="ot">&lt;-</span> <span class="fu">mean</span>(rstan<span class="sc">::</span><span class="fu">extract</span>(individual_fit)<span class="sc">$</span>intercept) <span class="sc">+</span> </span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>             <span class="fu">mean</span>(rstan<span class="sc">::</span><span class="fu">extract</span>(individual_fit)<span class="sc">$</span>beta_artist) <span class="sc">*</span> avg_popularity_artists</span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>             </span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>  pred_simuladas <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10000</span>, <span class="at">mean =</span> mu_pred, <span class="at">sd =</span> <span class="fu">mean</span>(rstan<span class="sc">::</span><span class="fu">extract</span>(individual_fit)<span class="sc">$</span>sigma))</span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a>  comp_simul[[i]] <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">real_popularity =</span> datos<span class="sc">$</span>popularity[i], <span class="at">simulated_popularity =</span> pred_simuladas)</span>
+<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-27_bb56f7c90e7615c3f16c82e18d559014">
-<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Establecer márgenes más pequeños</span></span>
-<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>))</span>
-<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">4</span>))  </span>
-<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(comp_simul)) {</span>
-<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>  real_popularity <span class="ot">&lt;-</span> comp_simul[[i]]<span class="sc">$</span>real_popularity</span>
-<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>  simulated_popularity <span class="ot">&lt;-</span> comp_simul[[i]]<span class="sc">$</span>simulated_popularity</span>
-<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># intervalo de confianza del 95%</span></span>
-<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a>  ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(simulated_popularity, <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>))</span>
-<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(<span class="dv">1</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="fu">max</span>(<span class="fu">c</span>(real_popularity, ci))), <span class="at">type=</span><span class="st">"n"</span>, <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">"Popularidad"</span>)</span>
-<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(<span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">2</span>), ci, <span class="at">col=</span><span class="st">"darkcyan"</span>, <span class="at">lwd=</span><span class="dv">2</span>)  </span>
-<span id="cb45-17"><a href="#cb45-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">points</span>(<span class="dv">1</span>, <span class="fu">abs</span>(<span class="fu">mean</span>(simulated_popularity)), <span class="at">col=</span><span class="st">"brown"</span>, <span class="at">pch=</span><span class="dv">19</span>)  </span>
-<span id="cb45-18"><a href="#cb45-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">points</span>(<span class="dv">1</span>, real_popularity, <span class="at">col=</span><span class="st">"orange"</span>, <span class="at">pch=</span><span class="dv">19</span>)  </span>
-<span id="cb45-19"><a href="#cb45-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">text</span>(<span class="fl">1.05</span>, real_popularity, <span class="fu">paste</span>(<span class="st">"Real:"</span>, real_popularity), <span class="at">pos=</span><span class="dv">4</span>,<span class="at">offset=</span><span class="dv">1</span>)  <span class="co"># Etiqueta valor real</span></span>
-<span id="cb45-20"><a href="#cb45-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">text</span>(<span class="fl">1.05</span>, <span class="fu">mean</span>(simulated_popularity), <span class="fu">paste</span>(<span class="st">"Media:"</span>, <span class="fu">round</span>(<span class="fu">abs</span>(<span class="fu">mean</span>(simulated_popularity)), <span class="dv">2</span>)), <span class="at">pos=</span><span class="dv">4</span>,<span class="at">offset=</span><span class="sc">-</span><span class="dv">6</span>)  <span class="co"># Etiqueta  media</span></span>
-<span id="cb45-21"><a href="#cb45-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">title</span>(<span class="fu">paste</span>(<span class="st">"Canción"</span>, i))  <span class="co"># Título</span></span>
-<span id="cb45-22"><a href="#cb45-22" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-18_5bf5730ac6aa28ba3c43d90386a0d7cf">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Establecer márgenes más pequeños</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>))</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">4</span>))  </span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(comp_simul)) {</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>  real_popularity <span class="ot">&lt;-</span> comp_simul[[i]]<span class="sc">$</span>real_popularity</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>  simulated_popularity <span class="ot">&lt;-</span> comp_simul[[i]]<span class="sc">$</span>simulated_popularity</span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># intervalo de confianza del 95%</span></span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>  ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(simulated_popularity, <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>))</span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(<span class="dv">1</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="fu">max</span>(<span class="fu">c</span>(real_popularity, ci))), <span class="at">type=</span><span class="st">"n"</span>, <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">"Popularidad"</span>)</span>
+<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(<span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">2</span>), ci, <span class="at">col=</span><span class="st">"darkcyan"</span>, <span class="at">lwd=</span><span class="dv">2</span>)  </span>
+<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">points</span>(<span class="dv">1</span>, <span class="fu">abs</span>(<span class="fu">mean</span>(simulated_popularity)), <span class="at">col=</span><span class="st">"brown"</span>, <span class="at">pch=</span><span class="dv">19</span>)  </span>
+<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">points</span>(<span class="dv">1</span>, real_popularity, <span class="at">col=</span><span class="st">"orange"</span>, <span class="at">pch=</span><span class="dv">19</span>)  </span>
+<span id="cb41-19"><a href="#cb41-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">text</span>(<span class="fl">1.05</span>, real_popularity, <span class="fu">paste</span>(<span class="st">"Real:"</span>, real_popularity), <span class="at">pos=</span><span class="dv">4</span>,<span class="at">offset=</span><span class="dv">1</span>)  <span class="co"># Etiqueta valor real</span></span>
+<span id="cb41-20"><a href="#cb41-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">text</span>(<span class="fl">1.05</span>, <span class="fu">mean</span>(simulated_popularity), <span class="fu">paste</span>(<span class="st">"Media:"</span>, <span class="fu">round</span>(<span class="fu">abs</span>(<span class="fu">mean</span>(simulated_popularity)), <span class="dv">2</span>)), <span class="at">pos=</span><span class="dv">4</span>,<span class="at">offset=</span><span class="sc">-</span><span class="dv">6</span>)  <span class="co"># Etiqueta  media</span></span>
+<span id="cb41-21"><a href="#cb41-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">title</span>(<span class="fu">paste</span>(<span class="st">"Canción"</span>, i))  <span class="co"># Título</span></span>
+<span id="cb41-22"><a href="#cb41-22" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="main_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid" width="672"></p>
+<p><img src="main_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid" width="672"></p>
 </div>
-<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)) </span>
-<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">2</span>) <span class="sc">+</span> <span class="fl">0.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)) </span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">2</span>) <span class="sc">+</span> <span class="fl">0.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="modelo-popularidad-entre-artistas" class="level2">
 <h2 class="anchored" data-anchor-id="modelo-popularidad-entre-artistas">Modelo popularidad entre artistas</h2>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-28_f09662f7d2cc9aa9f1790707c70273ce">
-<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>general_stan_code <span class="ot">&lt;-</span><span class="st">" </span></span>
-<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="st">data {</span></span>
-<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=0&gt; N;                // Número de observaciones</span></span>
-<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="st">  real popularity_avg_artist;    // Popularidad promedio entre artistas</span></span>
-<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a><span class="st">  vector[N] popularity;          // Popularidad de la canción</span></span>
-<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a><span class="st">parameters {</span></span>
-<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a><span class="st">  real intercept;                // Intercepto</span></span>
-<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_artist;              // Coeficiente de la popularidad entre artistas</span></span>
-<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0&gt; sigma;           // Desviación estándar de los errores</span></span>
-<span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb47-13"><a href="#cb47-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-14"><a href="#cb47-14" aria-hidden="true" tabindex="-1"></a><span class="st">model {</span></span>
-<span id="cb47-15"><a href="#cb47-15" aria-hidden="true" tabindex="-1"></a><span class="st">  // Priors</span></span>
-<span id="cb47-16"><a href="#cb47-16" aria-hidden="true" tabindex="-1"></a><span class="st">  intercept ~ normal(0, 1);      // Prior para el intercepto</span></span>
-<span id="cb47-17"><a href="#cb47-17" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_artist ~ normal(0, 1);     // Prior para el coeficiente de la popularidad entre artistas</span></span>
-<span id="cb47-18"><a href="#cb47-18" aria-hidden="true" tabindex="-1"></a><span class="st">  sigma ~ normal(0, 1);           // Prior para la desviación estándar</span></span>
-<span id="cb47-19"><a href="#cb47-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-20"><a href="#cb47-20" aria-hidden="true" tabindex="-1"></a><span class="st">  // Likelihood</span></span>
-<span id="cb47-21"><a href="#cb47-21" aria-hidden="true" tabindex="-1"></a><span class="st">  for (i in 1:N) {</span></span>
-<span id="cb47-22"><a href="#cb47-22" aria-hidden="true" tabindex="-1"></a><span class="st">    // Modelo lineal</span></span>
-<span id="cb47-23"><a href="#cb47-23" aria-hidden="true" tabindex="-1"></a><span class="st">    popularity[i] ~ normal(intercept + beta_artist * popularity_avg_artist, sigma);</span></span>
-<span id="cb47-24"><a href="#cb47-24" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
-<span id="cb47-25"><a href="#cb47-25" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb47-26"><a href="#cb47-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-27"><a href="#cb47-27" aria-hidden="true" tabindex="-1"></a><span class="st">//generated quantities {</span></span>
-<span id="cb47-28"><a href="#cb47-28" aria-hidden="true" tabindex="-1"></a><span class="st">//  vector[N] simulated_popularity;  // Simulaciones de la popularidad de las canciones</span></span>
-<span id="cb47-29"><a href="#cb47-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-30"><a href="#cb47-30" aria-hidden="true" tabindex="-1"></a><span class="st">  // Generar simulaciones</span></span>
-<span id="cb47-31"><a href="#cb47-31" aria-hidden="true" tabindex="-1"></a><span class="st">//  for (i in 1:N) {</span></span>
-<span id="cb47-32"><a href="#cb47-32" aria-hidden="true" tabindex="-1"></a><span class="st">//    simulated_popularity[i] = normal_rng(intercept + beta_artist * popularity_avg_artist, sigma);</span></span>
-<span id="cb47-33"><a href="#cb47-33" aria-hidden="true" tabindex="-1"></a><span class="st">//  }</span></span>
-<span id="cb47-34"><a href="#cb47-34" aria-hidden="true" tabindex="-1"></a><span class="st">//}</span></span>
-<span id="cb47-35"><a href="#cb47-35" aria-hidden="true" tabindex="-1"></a><span class="st">"</span></span>
-<span id="cb47-36"><a href="#cb47-36" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-37"><a href="#cb47-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb47-38"><a href="#cb47-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Compilar el modelo</span></span>
-<span id="cb47-39"><a href="#cb47-39" aria-hidden="true" tabindex="-1"></a>general_model <span class="ot">&lt;-</span> <span class="fu">stan_model</span>(<span class="at">model_code =</span> general_stan_code)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-19_2afe5acf372ce9e6b4938af3a3b9cc62">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>general_stan_code <span class="ot">&lt;-</span><span class="st">" </span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="st">data {</span></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=0&gt; N;                // Número de observaciones</span></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a><span class="st">  real popularity_avg_artist;    // Popularidad promedio entre artistas</span></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="st">  vector[N] popularity;          // Popularidad de la canción</span></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a><span class="st">parameters {</span></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a><span class="st">  real intercept;                // Intercepto</span></span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_artist;              // Coeficiente de la popularidad entre artistas</span></span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0&gt; sigma;           // Desviación estándar de los errores</span></span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a><span class="st">model {</span></span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a><span class="st">  // Priors</span></span>
+<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a><span class="st">  intercept ~ normal(0, 1);      // Prior para el intercepto</span></span>
+<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_artist ~ normal(0, 1);     // Prior para el coeficiente de la popularidad entre artistas</span></span>
+<span id="cb43-18"><a href="#cb43-18" aria-hidden="true" tabindex="-1"></a><span class="st">  sigma ~ normal(0, 1);           // Prior para la desviación estándar</span></span>
+<span id="cb43-19"><a href="#cb43-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-20"><a href="#cb43-20" aria-hidden="true" tabindex="-1"></a><span class="st">  // Likelihood</span></span>
+<span id="cb43-21"><a href="#cb43-21" aria-hidden="true" tabindex="-1"></a><span class="st">  for (i in 1:N) {</span></span>
+<span id="cb43-22"><a href="#cb43-22" aria-hidden="true" tabindex="-1"></a><span class="st">    // Modelo lineal</span></span>
+<span id="cb43-23"><a href="#cb43-23" aria-hidden="true" tabindex="-1"></a><span class="st">    popularity[i] ~ normal(intercept + beta_artist * popularity_avg_artist, sigma);</span></span>
+<span id="cb43-24"><a href="#cb43-24" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
+<span id="cb43-25"><a href="#cb43-25" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb43-26"><a href="#cb43-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-27"><a href="#cb43-27" aria-hidden="true" tabindex="-1"></a><span class="st">//generated quantities {</span></span>
+<span id="cb43-28"><a href="#cb43-28" aria-hidden="true" tabindex="-1"></a><span class="st">//  vector[N] simulated_popularity;  // Simulaciones de la popularidad de las canciones</span></span>
+<span id="cb43-29"><a href="#cb43-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-30"><a href="#cb43-30" aria-hidden="true" tabindex="-1"></a><span class="st">  // Generar simulaciones</span></span>
+<span id="cb43-31"><a href="#cb43-31" aria-hidden="true" tabindex="-1"></a><span class="st">//  for (i in 1:N) {</span></span>
+<span id="cb43-32"><a href="#cb43-32" aria-hidden="true" tabindex="-1"></a><span class="st">//    simulated_popularity[i] = normal_rng(intercept + beta_artist * popularity_avg_artist, sigma);</span></span>
+<span id="cb43-33"><a href="#cb43-33" aria-hidden="true" tabindex="-1"></a><span class="st">//  }</span></span>
+<span id="cb43-34"><a href="#cb43-34" aria-hidden="true" tabindex="-1"></a><span class="st">//}</span></span>
+<span id="cb43-35"><a href="#cb43-35" aria-hidden="true" tabindex="-1"></a><span class="st">"</span></span>
+<span id="cb43-36"><a href="#cb43-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-37"><a href="#cb43-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-38"><a href="#cb43-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Compilar el modelo</span></span>
+<span id="cb43-39"><a href="#cb43-39" aria-hidden="true" tabindex="-1"></a>general_model <span class="ot">&lt;-</span> <span class="fu">stan_model</span>(<span class="at">model_code =</span> general_stan_code)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Trying to compile a simple C file</code></pre>
 </div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-29_ca5c31b62b0e5b8ca12c188952f960d2">
-<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>avg_popularity_artists <span class="ot">&lt;-</span> <span class="fu">mean</span>(selected_datos<span class="sc">$</span>popularity_artist)</span>
-<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>stan_general_data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">N =</span> <span class="fu">nrow</span>(selected_datos),</span>
-<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">popularity =</span> selected_datos<span class="sc">$</span>popularity,</span>
-<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">popularity_avg_artist =</span> avg_popularity_artists</span>
-<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar el modelo a los datos</span></span>
-<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>general_fit <span class="ot">&lt;-</span> <span class="fu">sampling</span>(general_model, <span class="at">data =</span> stan_general_data, <span class="at">chains =</span> <span class="dv">4</span>, <span class="at">iter =</span> <span class="dv">10000</span>, <span class="at">warmup =</span> <span class="dv">500</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Running /usr/lib/R/bin/R CMD SHLIB foo.c
+using C compiler: ‘gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’
+gcc -I"/usr/share/R/include" -DNDEBUG   -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/Rcpp/1.0.12/5ea2700d21e038ace58269ecdbeb9ec0/Rcpp/include/"  -I"/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/"  -I"/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/unsupported"  -I"/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/BH/include" -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/src/"  -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/"  -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/RcppParallel/5.1.7/a45594a00f5dbb073d5ec9f48592a08a/RcppParallel/include/"  -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/rstan/2.32.5/378a10b6373822761ec78021c105b059/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -D_HAS_AUTO_PTR_ETC=0  -include '/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1       -fpic  -g -O2 -ffile-prefix-map=/build/r-base-14Q6vq/r-base-4.3.3=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c foo.c -o foo.o
+In file included from /home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Core:88,
+                 from /home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Dense:1,
+                 from /home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22,
+                 from &lt;command-line&gt;:
+/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name ‘namespace’
+  628 | namespace Eigen {
+      | ^~~~~~~~~
+/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:17: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘{’ token
+  628 | namespace Eigen {
+      |                 ^
+In file included from /home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Dense:1,
+                 from /home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22,
+                 from &lt;command-line&gt;:
+/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Core:96:10: fatal error: complex: No such file or directory
+   96 | #include &lt;complex&gt;
+      |          ^~~~~~~~~
+compilation terminated.
+make: *** [/usr/lib/R/etc/Makeconf:191: foo.o] Error 1</code></pre>
 </div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-30_e2681e3c8c2bb86c948b147b8ccf4c95">
-<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(general_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-20_22be1fe651362f9fc4a882c43b61ec16">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>avg_popularity_artists <span class="ot">&lt;-</span> <span class="fu">mean</span>(selected_datos<span class="sc">$</span>popularity_artist)</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>stan_general_data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">N =</span> <span class="fu">nrow</span>(selected_datos),</span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">popularity =</span> selected_datos<span class="sc">$</span>popularity,</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">popularity_avg_artist =</span> avg_popularity_artists</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Ajustar el modelo a los datos</span></span>
+<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a>general_fit <span class="ot">&lt;-</span> <span class="fu">sampling</span>(general_model, <span class="at">data =</span> stan_general_data, <span class="at">chains =</span> <span class="dv">4</span>, <span class="at">iter =</span> <span class="dv">10000</span>, <span class="at">warmup =</span> <span class="dv">500</span>, <span class="at">seed=</span><span class="dv">123</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-21_602352cd1f52649228fc99ed72ff69be">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(general_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Inference for Stan model: anon_model.
 4 chains, each with iter=10000; warmup=500; thin=1; 
 post-warmup draws per chain=9500, total post-warmup draws=38000.
 
-                mean se_mean   sd     2.5%      25%      50%      75%    97.5%
-intercept       0.03    0.01 1.00    -1.93    -0.63     0.03     0.70     1.99
-beta_artist     0.99    0.00 0.03     0.92     0.96     0.99     1.01     1.05
-sigma          19.13    0.00 0.33    18.50    18.91    19.12    19.35    19.77
-lp__        -3814.29    0.01 1.23 -3817.49 -3814.84 -3813.96 -3813.39 -3812.89
-            n_eff Rhat
-intercept   14770    1
-beta_artist 14764    1
-sigma       22500    1
-lp__        14577    1
+                 mean se_mean   sd      2.5%       25%       50%       75%
+intercept        0.03    0.01 1.01     -1.92     -0.65      0.02      0.71
+beta_artist      1.00    0.00 0.03      0.94      0.98      1.00      1.02
+sigma           22.04    0.00 0.20     21.65     21.90     22.04     22.18
+lp__        -18448.20    0.01 1.22 -18451.32 -18448.78 -18447.89 -18447.30
+                97.5% n_eff Rhat
+intercept        2.02 12706    1
+beta_artist      1.06 12662    1
+sigma           22.44 18743    1
+lp__        -18446.80 12599    1
 
-Samples were drawn using NUTS(diag_e) at Fri May 10 14:58:45 2024.
+Samples were drawn using NUTS(diag_e) at Fri May 10 20:40:38 2024.
 For each parameter, n_eff is a crude measure of effective sample size,
 and Rhat is the potential scale reduction factor on split chains (at 
 convergence, Rhat=1).</code></pre>
 </div>
 </div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-31_827eac409b5601ebf2d10e4f097eb322">
-<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stan_plot</span>(general_fit, <span class="at">prob =</span> <span class="fl">0.95</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-22_1cd0d3d68e2a36ddb2d15f817cf2ba65">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stan_plot</span>(general_fit, <span class="at">prob =</span> <span class="fl">0.95</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>ci_level: 0.8 (80% intervals)</code></pre>
 </div>
@@ -931,94 +860,120 @@ convergence, Rhat=1).</code></pre>
 <pre><code>outer_level: 0.95 (95% intervals)</code></pre>
 </div>
 <div class="cell-output-display">
-<p><img src="main_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid" width="672"></p>
+<p><img src="main_files/figure-html/unnamed-chunk-22-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 <p>Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.</p>
 <p>En el siguiente gráfico puede observarse un intervalod el 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-32_7ef76e331ce4d012cefbf4b1b27dfde9">
-<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>n_songs <span class="ot">=</span> <span class="dv">20</span></span>
-<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>comp_simul <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
-<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_songs) {</span>
-<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>  mu_pred <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">extract</span>(general_fit)<span class="sc">$</span>intercept) <span class="sc">+</span> </span>
-<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a>             <span class="fu">mean</span>(<span class="fu">extract</span>(general_fit)<span class="sc">$</span>beta_artist) <span class="sc">*</span> avg_popularity_artists</span>
-<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a>             </span>
-<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a>  pred_simuladas <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10000</span>, <span class="at">mean =</span> mu_pred, <span class="at">sd =</span> <span class="fu">mean</span>(<span class="fu">extract</span>(general_fit)<span class="sc">$</span>sigma))</span>
-<span id="cb54-9"><a href="#cb54-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb54-10"><a href="#cb54-10" aria-hidden="true" tabindex="-1"></a>  comp_simul[[i]] <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">real_popularity =</span> datos<span class="sc">$</span>popularity[i], <span class="at">simulated_popularity =</span> pred_simuladas)</span>
-<span id="cb54-11"><a href="#cb54-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-23_cf93ac8a20eeadb175eeb37c79ef8486">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>n_songs <span class="ot">=</span> <span class="dv">20</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>comp_simul <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_songs) {</span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>  mu_pred <span class="ot">&lt;-</span> <span class="fu">mean</span>(rstan<span class="sc">::</span><span class="fu">extract</span>(general_fit)<span class="sc">$</span>intercept) <span class="sc">+</span> </span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>             <span class="fu">mean</span>(rstan<span class="sc">::</span><span class="fu">extract</span>(general_fit)<span class="sc">$</span>beta_artist) <span class="sc">*</span> avg_popularity_artists</span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a>             </span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>  pred_simuladas <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10000</span>, <span class="at">mean =</span> mu_pred, <span class="at">sd =</span> <span class="fu">mean</span>(rstan<span class="sc">::</span><span class="fu">extract</span>(general_fit)<span class="sc">$</span>sigma))</span>
+<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-10"><a href="#cb52-10" aria-hidden="true" tabindex="-1"></a>  comp_simul[[i]] <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">real_popularity =</span> datos<span class="sc">$</span>popularity[i], <span class="at">simulated_popularity =</span> pred_simuladas)</span>
+<span id="cb52-11"><a href="#cb52-11" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-33_fc601d3664d79103a2acb4f1bfd915b7">
-<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>))</span>
-<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">4</span>))  </span>
-<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(comp_simul)) {</span>
-<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a>  real_popularity <span class="ot">&lt;-</span> comp_simul[[i]]<span class="sc">$</span>real_popularity</span>
-<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a>  simulated_popularity <span class="ot">&lt;-</span> comp_simul[[i]]<span class="sc">$</span>simulated_popularity</span>
-<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># intervalo de confianza del 95%</span></span>
-<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a>  ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(simulated_popularity, <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>))</span>
-<span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb55-14"><a href="#cb55-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb55-15"><a href="#cb55-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(<span class="dv">1</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="fu">max</span>(<span class="fu">c</span>(real_popularity, ci))), <span class="at">type=</span><span class="st">"n"</span>, <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">"Popularidad"</span>)</span>
-<span id="cb55-16"><a href="#cb55-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(<span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">2</span>), ci, <span class="at">col=</span><span class="st">"darkcyan"</span>, <span class="at">lwd=</span><span class="dv">2</span>)  </span>
-<span id="cb55-17"><a href="#cb55-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">points</span>(<span class="dv">1</span>, <span class="fu">abs</span>(<span class="fu">mean</span>(simulated_popularity)), <span class="at">col=</span><span class="st">"brown"</span>, <span class="at">pch=</span><span class="dv">19</span>)  </span>
-<span id="cb55-18"><a href="#cb55-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">points</span>(<span class="dv">1</span>, real_popularity, <span class="at">col=</span><span class="st">"orange"</span>, <span class="at">pch=</span><span class="dv">19</span>)  </span>
-<span id="cb55-19"><a href="#cb55-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">text</span>(<span class="fl">1.05</span>, real_popularity, <span class="fu">paste</span>(<span class="st">"Real:"</span>, real_popularity), <span class="at">pos=</span><span class="dv">4</span>,<span class="at">offset=</span><span class="dv">1</span>)  <span class="co"># Etiqueta valor real</span></span>
-<span id="cb55-20"><a href="#cb55-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">text</span>(<span class="fl">1.05</span>, <span class="fu">mean</span>(simulated_popularity), <span class="fu">paste</span>(<span class="st">"Media:"</span>, <span class="fu">round</span>(<span class="fu">abs</span>(<span class="fu">mean</span>(simulated_popularity)), <span class="dv">2</span>)), <span class="at">pos=</span><span class="dv">4</span>,<span class="at">offset=</span><span class="sc">-</span><span class="dv">6</span>)  <span class="co"># Etiqueta  media</span></span>
-<span id="cb55-21"><a href="#cb55-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">title</span>(<span class="fu">paste</span>(<span class="st">"Canción"</span>, i))  <span class="co"># Título</span></span>
-<span id="cb55-22"><a href="#cb55-22" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-24_b1cf7992cb15b72cd490030a19d1aef2">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>))</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">4</span>))  </span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(comp_simul)) {</span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>  real_popularity <span class="ot">&lt;-</span> comp_simul[[i]]<span class="sc">$</span>real_popularity</span>
+<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>  simulated_popularity <span class="ot">&lt;-</span> comp_simul[[i]]<span class="sc">$</span>simulated_popularity</span>
+<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># intervalo de confianza del 95%</span></span>
+<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a>  ci <span class="ot">&lt;-</span> <span class="fu">quantile</span>(simulated_popularity, <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>))</span>
+<span id="cb53-13"><a href="#cb53-13" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb53-14"><a href="#cb53-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb53-15"><a href="#cb53-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(<span class="dv">1</span>, <span class="at">xlim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">2</span>), <span class="at">ylim=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="fu">max</span>(<span class="fu">c</span>(real_popularity, ci))), <span class="at">type=</span><span class="st">"n"</span>, <span class="at">xlab=</span><span class="st">""</span>, <span class="at">ylab=</span><span class="st">"Popularidad"</span>)</span>
+<span id="cb53-16"><a href="#cb53-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">lines</span>(<span class="fu">rep</span>(<span class="dv">1</span>, <span class="dv">2</span>), ci, <span class="at">col=</span><span class="st">"darkcyan"</span>, <span class="at">lwd=</span><span class="dv">2</span>)  </span>
+<span id="cb53-17"><a href="#cb53-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">points</span>(<span class="dv">1</span>, <span class="fu">abs</span>(<span class="fu">mean</span>(simulated_popularity)), <span class="at">col=</span><span class="st">"brown"</span>, <span class="at">pch=</span><span class="dv">19</span>)  </span>
+<span id="cb53-18"><a href="#cb53-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">points</span>(<span class="dv">1</span>, real_popularity, <span class="at">col=</span><span class="st">"orange"</span>, <span class="at">pch=</span><span class="dv">19</span>)  </span>
+<span id="cb53-19"><a href="#cb53-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">text</span>(<span class="fl">1.05</span>, real_popularity, <span class="fu">paste</span>(<span class="st">"Real:"</span>, real_popularity), <span class="at">pos=</span><span class="dv">4</span>,<span class="at">offset=</span><span class="dv">1</span>)  <span class="co"># Etiqueta valor real</span></span>
+<span id="cb53-20"><a href="#cb53-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">text</span>(<span class="fl">1.05</span>, <span class="fu">mean</span>(simulated_popularity), <span class="fu">paste</span>(<span class="st">"Media:"</span>, <span class="fu">round</span>(<span class="fu">abs</span>(<span class="fu">mean</span>(simulated_popularity)), <span class="dv">2</span>)), <span class="at">pos=</span><span class="dv">4</span>,<span class="at">offset=</span><span class="sc">-</span><span class="dv">6</span>)  <span class="co"># Etiqueta  media</span></span>
+<span id="cb53-21"><a href="#cb53-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">title</span>(<span class="fu">paste</span>(<span class="st">"Canción"</span>, i))  <span class="co"># Título</span></span>
+<span id="cb53-22"><a href="#cb53-22" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="main_files/figure-html/unnamed-chunk-33-1.png" class="img-fluid" width="672"></p>
+<p><img src="main_files/figure-html/unnamed-chunk-24-1.png" class="img-fluid" width="672"></p>
 </div>
-<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)) </span>
-<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">2</span>) <span class="sc">+</span> <span class="fl">0.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)) </span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">4</span>, <span class="dv">4</span>, <span class="dv">2</span>) <span class="sc">+</span> <span class="fl">0.1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="modelo-jerárquico" class="level2">
 <h2 class="anchored" data-anchor-id="modelo-jerárquico">Modelo jerárquico</h2>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-34_9b2e8106ec925a610b74eedc9fa71ee1">
-<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>jerarquico_code <span class="ot">&lt;-</span> <span class="st">"</span></span>
-<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a><span class="st">data {</span></span>
-<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=0&gt; N;                     // Número de observaciones</span></span>
-<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a><span class="st">  vector[N] popularity_artist;        // Popularidad individual del artista</span></span>
-<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a><span class="st">  real popularity_avg_artist;         // Popularidad promedio entre artistas</span></span>
-<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a><span class="st">  vector[N] popularity;               // Popularidad de la canción</span></span>
-<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a><span class="st">parameters {</span></span>
-<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a><span class="st">  real intercept;                     // Intercepto</span></span>
-<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_individual_artist;        // Coeficiente de la popularidad individual del artista</span></span>
-<span id="cb57-12"><a href="#cb57-12" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_avg_artist;               // Coeficiente de la popularidad promedio entre artistas</span></span>
-<span id="cb57-13"><a href="#cb57-13" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0&gt; sigma;                // Desviación estándar de los errores</span></span>
-<span id="cb57-14"><a href="#cb57-14" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb57-15"><a href="#cb57-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb57-16"><a href="#cb57-16" aria-hidden="true" tabindex="-1"></a><span class="st">model {</span></span>
-<span id="cb57-17"><a href="#cb57-17" aria-hidden="true" tabindex="-1"></a><span class="st">  // Priors</span></span>
-<span id="cb57-18"><a href="#cb57-18" aria-hidden="true" tabindex="-1"></a><span class="st">  intercept ~ normal(0, 1);          // Prior para el intercepto</span></span>
-<span id="cb57-19"><a href="#cb57-19" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_individual_artist ~ normal(0, 1);  // Prior para el coeficiente de la popularidad individual del artista</span></span>
-<span id="cb57-20"><a href="#cb57-20" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_avg_artist ~ normal(0, 1);     // Prior para el coeficiente de la popularidad promedio entre artistas</span></span>
-<span id="cb57-21"><a href="#cb57-21" aria-hidden="true" tabindex="-1"></a><span class="st">  sigma ~ normal(0, 1);               // Prior para la desviación estándar</span></span>
-<span id="cb57-22"><a href="#cb57-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb57-23"><a href="#cb57-23" aria-hidden="true" tabindex="-1"></a><span class="st">  // Likelihood</span></span>
-<span id="cb57-24"><a href="#cb57-24" aria-hidden="true" tabindex="-1"></a><span class="st">  for (i in 1:N) {</span></span>
-<span id="cb57-25"><a href="#cb57-25" aria-hidden="true" tabindex="-1"></a><span class="st">    // Modelo lineal jerárquico</span></span>
-<span id="cb57-26"><a href="#cb57-26" aria-hidden="true" tabindex="-1"></a><span class="st">    popularity[i] ~ normal(intercept + beta_individual_artist * popularity_artist[i] + beta_avg_artist * popularity_avg_artist, sigma);</span></span>
-<span id="cb57-27"><a href="#cb57-27" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
-<span id="cb57-28"><a href="#cb57-28" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
-<span id="cb57-29"><a href="#cb57-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb57-30"><a href="#cb57-30" aria-hidden="true" tabindex="-1"></a><span class="st">"</span></span>
-<span id="cb57-31"><a href="#cb57-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb57-32"><a href="#cb57-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Compilar el modelo</span></span>
-<span id="cb57-33"><a href="#cb57-33" aria-hidden="true" tabindex="-1"></a>jerarquico_model <span class="ot">&lt;-</span> <span class="fu">stan_model</span>(<span class="at">model_code =</span> jerarquico_code)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-25_3011830a40c04962c98531564530e230">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>jerarquico_code <span class="ot">&lt;-</span> <span class="st">"</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="st">data {</span></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="st">  int&lt;lower=0&gt; N;                     // Número de observaciones</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a><span class="st">  vector[N] popularity_artist;        // Popularidad individual del artista</span></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a><span class="st">  real popularity_avg_artist;         // Popularidad promedio entre artistas</span></span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a><span class="st">  vector[N] popularity;               // Popularidad de la canción</span></span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a><span class="st">parameters {</span></span>
+<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a><span class="st">  real intercept;                     // Intercepto</span></span>
+<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_individual_artist;        // Coeficiente de la popularidad individual del artista</span></span>
+<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a><span class="st">  real beta_avg_artist;               // Coeficiente de la popularidad promedio entre artistas</span></span>
+<span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a><span class="st">  real&lt;lower=0&gt; sigma;                // Desviación estándar de los errores</span></span>
+<span id="cb55-14"><a href="#cb55-14" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb55-15"><a href="#cb55-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-16"><a href="#cb55-16" aria-hidden="true" tabindex="-1"></a><span class="st">model {</span></span>
+<span id="cb55-17"><a href="#cb55-17" aria-hidden="true" tabindex="-1"></a><span class="st">  // Priors</span></span>
+<span id="cb55-18"><a href="#cb55-18" aria-hidden="true" tabindex="-1"></a><span class="st">  intercept ~ normal(0, 1);          // Prior para el intercepto</span></span>
+<span id="cb55-19"><a href="#cb55-19" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_individual_artist ~ normal(0, 1);  // Prior para el coeficiente de la popularidad individual del artista</span></span>
+<span id="cb55-20"><a href="#cb55-20" aria-hidden="true" tabindex="-1"></a><span class="st">  beta_avg_artist ~ normal(0, 1);     // Prior para el coeficiente de la popularidad promedio entre artistas</span></span>
+<span id="cb55-21"><a href="#cb55-21" aria-hidden="true" tabindex="-1"></a><span class="st">  sigma ~ normal(0, 1);               // Prior para la desviación estándar</span></span>
+<span id="cb55-22"><a href="#cb55-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-23"><a href="#cb55-23" aria-hidden="true" tabindex="-1"></a><span class="st">  // Likelihood</span></span>
+<span id="cb55-24"><a href="#cb55-24" aria-hidden="true" tabindex="-1"></a><span class="st">  for (i in 1:N) {</span></span>
+<span id="cb55-25"><a href="#cb55-25" aria-hidden="true" tabindex="-1"></a><span class="st">    // Modelo lineal jerárquico</span></span>
+<span id="cb55-26"><a href="#cb55-26" aria-hidden="true" tabindex="-1"></a><span class="st">    popularity[i] ~ normal(intercept + beta_individual_artist * popularity_artist[i] + beta_avg_artist * popularity_avg_artist, sigma);</span></span>
+<span id="cb55-27"><a href="#cb55-27" aria-hidden="true" tabindex="-1"></a><span class="st">  }</span></span>
+<span id="cb55-28"><a href="#cb55-28" aria-hidden="true" tabindex="-1"></a><span class="st">}</span></span>
+<span id="cb55-29"><a href="#cb55-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-30"><a href="#cb55-30" aria-hidden="true" tabindex="-1"></a><span class="st">"</span></span>
+<span id="cb55-31"><a href="#cb55-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-32"><a href="#cb55-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Compilar el modelo</span></span>
+<span id="cb55-33"><a href="#cb55-33" aria-hidden="true" tabindex="-1"></a>jerarquico_model <span class="ot">&lt;-</span> <span class="fu">stan_model</span>(<span class="at">model_code =</span> jerarquico_code)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Trying to compile a simple C file</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Running /usr/lib/R/bin/R CMD SHLIB foo.c
+using C compiler: ‘gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0’
+gcc -I"/usr/share/R/include" -DNDEBUG   -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/Rcpp/1.0.12/5ea2700d21e038ace58269ecdbeb9ec0/Rcpp/include/"  -I"/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/"  -I"/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/unsupported"  -I"/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/BH/include" -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/src/"  -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/"  -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/RcppParallel/5.1.7/a45594a00f5dbb073d5ec9f48592a08a/RcppParallel/include/"  -I"/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/rstan/2.32.5/378a10b6373822761ec78021c105b059/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -D_HAS_AUTO_PTR_ETC=0  -include '/home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1       -fpic  -g -O2 -ffile-prefix-map=/build/r-base-14Q6vq/r-base-4.3.3=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2  -c foo.c -o foo.o
+In file included from /home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Core:88,
+                 from /home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Dense:1,
+                 from /home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22,
+                 from &lt;command-line&gt;:
+/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:1: error: unknown type name ‘namespace’
+  628 | namespace Eigen {
+      | ^~~~~~~~~
+/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/src/Core/util/Macros.h:628:17: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘{’ token
+  628 | namespace Eigen {
+      |                 ^
+In file included from /home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Dense:1,
+                 from /home/saraluz/.cache/R/renv/cache/v5/R-4.3/x86_64-pc-linux-gnu/StanHeaders/2.32.5/b8d6850ef3e330bc108e712679e79443/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:22,
+                 from &lt;command-line&gt;:
+/home/saraluz/Documents/2Sem/MLG/Tareas/renv/library/R-4.3/x86_64-pc-linux-gnu/RcppEigen/include/Eigen/Core:96:10: fatal error: complex: No such file or directory
+   96 | #include &lt;complex&gt;
+      |          ^~~~~~~~~
+compilation terminated.
+make: *** [/usr/lib/R/etc/Makeconf:191: foo.o] Error 1</code></pre>
+</div>
 </div>
 <p>Ejecutamos el modelo</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-35_836c5fa02cb26ef0b0dac17ad159435b">
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-26_2b6eccfdf2151d2e168a5682a69530a1">
 <div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>stan_jerarquico_data <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
 <span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">N =</span> <span class="fu">nrow</span>(selected_datos),</span>
 <span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">popularity =</span> selected_datos<span class="sc">$</span>popularity,</span>
@@ -1033,7 +988,7 @@ convergence, Rhat=1).</code></pre>
 <span id="cb58-12"><a href="#cb58-12" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(jerarquico_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Observamos el resumen del entrenamiento</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-36_a8af551f1bede6402c5dc11296a178d5">
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-27_49b4c002b092dbdfcb0c6090d0808bf4">
 <div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stan_plot</span>(jerarquico_fit, <span class="at">prob =</span> <span class="fl">0.95</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>ci_level: 0.8 (80% intervals)</code></pre>
@@ -1042,27 +997,27 @@ convergence, Rhat=1).</code></pre>
 <pre><code>outer_level: 0.95 (95% intervals)</code></pre>
 </div>
 <div class="cell-output-display">
-<p><img src="main_files/figure-html/unnamed-chunk-36-1.png" class="img-fluid" width="672"></p>
+<p><img src="main_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 <p>Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.</p>
 <p>En el siguiente gráfico puede observarse un intervalod el 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.</p>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-37_de1b61e8ddbdcbd36b8f7be8f2191d4a">
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-28_85afeda18b1eaf5b6ce0cd37b1f5f7e1">
 <div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>n_songs <span class="ot">=</span> <span class="dv">20</span></span>
 <span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculamos las predicciones con los coeficientes obtenidos</span></span>
 <span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>comp_simul <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
 <span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_songs) {</span>
-<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a>  mu_pred <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">extract</span>(jerarquico_fit)<span class="sc">$</span>intercept) <span class="sc">+</span> </span>
-<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a>             <span class="fu">mean</span>(<span class="fu">extract</span>(jerarquico_fit)<span class="sc">$</span>beta_individual_artist) <span class="sc">*</span> datos<span class="sc">$</span>popularity_artist[i] <span class="sc">+</span></span>
-<span id="cb62-8"><a href="#cb62-8" aria-hidden="true" tabindex="-1"></a>             <span class="fu">mean</span>(<span class="fu">extract</span>(jerarquico_fit)<span class="sc">$</span>beta_avg_artist) <span class="sc">*</span> avg_popularity_artists</span>
+<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a>  mu_pred <span class="ot">&lt;-</span> <span class="fu">mean</span>(rstan<span class="sc">::</span><span class="fu">extract</span>(jerarquico_fit)<span class="sc">$</span>intercept) <span class="sc">+</span> </span>
+<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a>             <span class="fu">mean</span>(rstan<span class="sc">::</span><span class="fu">extract</span>(jerarquico_fit)<span class="sc">$</span>beta_individual_artist) <span class="sc">*</span> datos<span class="sc">$</span>popularity_artist[i] <span class="sc">+</span></span>
+<span id="cb62-8"><a href="#cb62-8" aria-hidden="true" tabindex="-1"></a>             <span class="fu">mean</span>(rstan<span class="sc">::</span><span class="fu">extract</span>(jerarquico_fit)<span class="sc">$</span>beta_avg_artist) <span class="sc">*</span> avg_popularity_artists</span>
 <span id="cb62-9"><a href="#cb62-9" aria-hidden="true" tabindex="-1"></a>             </span>
-<span id="cb62-10"><a href="#cb62-10" aria-hidden="true" tabindex="-1"></a>  pred_simuladas <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10000</span>, <span class="at">mean =</span> mu_pred, <span class="at">sd =</span> <span class="fu">mean</span>(<span class="fu">extract</span>(jerarquico_fit)<span class="sc">$</span>sigma))</span>
+<span id="cb62-10"><a href="#cb62-10" aria-hidden="true" tabindex="-1"></a>  pred_simuladas <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="dv">10000</span>, <span class="at">mean =</span> mu_pred, <span class="at">sd =</span> <span class="fu">mean</span>(rstan<span class="sc">::</span><span class="fu">extract</span>(jerarquico_fit)<span class="sc">$</span>sigma))</span>
 <span id="cb62-11"><a href="#cb62-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb62-12"><a href="#cb62-12" aria-hidden="true" tabindex="-1"></a>  comp_simul[[i]] <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">real_popularity =</span> datos<span class="sc">$</span>popularity[i], <span class="at">simulated_popularity =</span> pred_simuladas)</span>
 <span id="cb62-13"><a href="#cb62-13" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-hash="main_cache/html/unnamed-chunk-38_d67c5847ee57e40dfeb11d17c3462b99">
+<div class="cell" data-hash="main_cache/html/unnamed-chunk-29_4e796b51d56ea6a136891cfc6a5fd7db">
 <div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>, <span class="dv">2</span>))</span>
 <span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -1086,7 +1041,7 @@ convergence, Rhat=1).</code></pre>
 <span id="cb63-21"><a href="#cb63-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">title</span>(<span class="fu">paste</span>(<span class="st">"Canción"</span>, i))  <span class="co"># Título</span></span>
 <span id="cb63-22"><a href="#cb63-22" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="main_files/figure-html/unnamed-chunk-38-1.png" class="img-fluid" width="672"></p>
+<p><img src="main_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid" width="672"></p>
 </div>
 <div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow=</span><span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>)) </span>
 <span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a></span>
