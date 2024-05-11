@@ -7,21 +7,14 @@ authors:
   - Sara Luz Valenzuela Camacho
   - Valeria
   - Iván
+format: html
 execute:
   cache: true
 ---
 
 # Análisis de popularidad de canciones en spotify
 
-**Falta semilla en los modelos**
-
-
-# Introducción
-[ describiendo cuál es el problema que se pretende resolver, los supuestos, el contexto y el alcance.]
-
-
-
-## Planteamiento
+## Introducción
 
 De acuerdo con wikipedia, en la plataforma de Spotify se tiene acceso a más de 100 millones de canciones. Algunas canciones son más populares que otras. Si definimos a la variable 𝑌 como un rating de popularidad con 𝑌 ∈ [0, 100]. En general, entre más reproducciones recientes tenga una una canción, su rating de popularidad será mayor. 
 
@@ -30,31 +23,31 @@ Además del artista hay otras características que hacen popular a una canción,
 
 Para el proyecto nos enfocaremos en entender:
 
-* Cual es la popularidad típica de una canción en Spotify?
-* Hasta donde influye el artista en la popularidad de la canción?
-* Para un sólo artista, cómo varía la popularidad de sus canciones?
-* Como influye la valencia en la popularidad de una canción?
+**Falta mencionar el modelo lineal y modelo lineal con prioris informativas**
+* ¿Cuál es la popularidad típica de una canción en Spotify?
+* ¿Hasta donde influye el artista en la popularidad de la canción?
+* Para un sólo artista, ¿cómo varía la popularidad de sus canciones?
+* ¿Cómo influye la valencia en la popularidad de una canción?
 
 Métodos:
 
-* Para nuestro proyecto planeamos hacer tres tipos de modelos:
-* Modelo con parámetros homogéneos: Modelar la popularidad de las canciones sin tomar en cuenta el artista.
-* Modelo con parámetros heterogéneos: Modelar la popularidad de las canciones tomando en cuenta a los artistas que las interpretan.
-* Modelo Jerárquico Una alternativa intermedia donde permitimos que la distribución inicial sobre la popularidad pueda adaptarse a los datos. Y comparar sus distribuciones predictivas con los datos observados, para ver cuál modela mejor y porqué.
-* Modelo Jerarquico con DAG: Haremos un DAG para agregar al modelo jerárquico la variable de valencia.
+Para nuestro proyecto planeamos hacer tres tipos de modelos:
 
-### Librerias
+* **Modelo con parámetros homogéneos:** Modelar la popularidad de las canciones sin tomar en cuenta el artista.
+* **Modelo con parámetros heterogéneos:** Modelar la popularidad de las canciones tomando en cuenta a los artistas que las interpretan.
+* **Modelo Jerárquico:** Una alternativa intermedia donde permitimos que la distribución inicial sobre la popularidad pueda adaptarse a los datos. Y comparar sus distribuciones predictivas con los datos observados, para ver cuál modela mejor y porqué.
+* **Modelo Jerarquico con DAG:** Haremos un DAG para agregar al modelo jerárquico la variable de valencia.
+
+Las librerías que utilizamos son las soguientes:
+
 ```{r message=FALSE, results="hide"}
-
-#install.packages("spotifyr")
-#install.packages("bayesrules")
 library(rstan)
 library(ggplot2)
 library(gridExtra)
-
+library(tidyverse)
+library(cmdstanr)
+library(rsample)
 ```
-
-
 
 ## Datos
 
@@ -63,196 +56,24 @@ library(gridExtra)
 Observamos la estructura de los datos
 
 ```{r}
-
-datos <- read.csv("datos/datos.csv")
-print(head(datos))
+datos <- read.csv("datos/datos.csv") 
+datos <- as.data.frame(datos)
+selected_datos_small <- read.csv("datos/datos_small.csv") 
+glimpse(datos)
 ```
 
-Contamos con 114000 registros de canciones y 21 características que los representan
+Contamos con 114000 registros de canciones y 21 características que los representan. Sin embargo vamos a ocupar sólo una muestra de 57,000 canciones. En el Anexo 1 de este trabajo se encuentra la limpieza y adecuación de datos para su uso en la modelación de la popularidad de las canciones.
 
 ```{r}
-
-str(datos)
-
+datos <- read.csv("datos/muestra.csv") 
 ```
 
 Obtenemos un resumen de los datos y sus variables
 ```{r}
-
 print(summary(datos))
-
-```
-
-
-## Limpieza y adecuación de datos
-
-### Asignacion de valores numéricos a los géneros
-
-```{r}
-
-datos$genre_factor <- factor(datos$track_genre)
-generos_unicos <- levels(datos$genre_factor)
-
-#Diccionario
-diccionario_generos <- setNames(seq_along(generos_unicos), generos_unicos)
-
-datos$genre_numeric <- diccionario_generos[datos$genre_factor]
-
-```
-
-
-### Asignación de valores numéricos al artista
-
-```{r}
-
-datos$artists_factor <- factor(datos$artists)
-artistas_unicos <- levels(datos$artists_factor)
-
-#Diccionario
-diccionario_artists <- setNames(seq_along(artistas_unicos), artistas_unicos)
-
-datos$artists_numeric <- diccionario_artists[datos$artists_factor]
-
-```
-
-### Codificación numérica para explicita
-
-```{r}
-
-datos <- transform(datos,
-                explicit = ifelse(explicit, 1, 0))
-
-```
-
-### Agregar media de popularidad por artista
-
-* Obtenemos popularidad del artista mediante la media de sus popularidades
-
-
-```{r}
-
-media_popularidad_por_artista <- aggregate(popularity ~ artists_numeric, data = datos, FUN = mean)
-
-names(media_popularidad_por_artista)[2] <- "popularity_artist"
-
-datos <- merge(datos, media_popularidad_por_artista, by = "artists_numeric", all.x = TRUE)
-
-
-```
-
-## Muestra de los datos
-
-```{r}
-
-n <- 1000  
-
-# muestra aleatoria (Sólo para EDA)
-datos <- datos[sample(nrow(datos), n), ]
-
-```
-
-## Exploración de los datos
-
-
-```{r}
-
-# popularidad
-ggplot(datos, aes(x = factor(popularity))) +
-  geom_bar(fill = "darkcyan", color = "black") +
-  labs(x = "Popularidad", y = "Frecuencia", title = "Distribución de la popularidad") +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-
-```
-
-```{r message=FALSE,results="hide"}
-
-# Crear los gráficos individuales
-plot_valence <-ggplot(datos, aes(x = valence, y = popularity)) +
-  geom_point(color="pink") +
-  geom_smooth(method = "loess", se = FALSE, color="black") 
-  labs(x = "Valence", y = "Popularity")
-
-plot_acousticness <- ggplot(datos, aes(x = acousticness, y = popularity)) +
-  geom_point(color="lightblue") +
-  geom_smooth(method = "loess", se = FALSE, color="black") 
-  labs(x = "Acousticness", y = "Popularity")
-
-plot_danceability <- ggplot(datos, aes(x = danceability, y = popularity)) +
-  geom_point(color="gray") +
-  geom_smooth(method = "loess", se = FALSE, color="black") 
-  labs(x = "Danceability", y = "Popularity")
-
-plot_duration <- ggplot(datos, aes(x = duration_ms, y = popularity)) +
-  geom_point(color="lightgreen") +
-  geom_smooth(method = "loess", se = FALSE, color="black") 
-  labs(x = "Duration (ms)", y = "Popularity")
-
-plot_energy <- ggplot(datos, aes(x = energy, y = popularity)) +
-  geom_point(color="#e55b76") +
-  geom_smooth(method = "loess", se = FALSE, color="black") 
-  labs(x = "Energy", y = "Popularity")
-
-plot_explicit <- ggplot(datos, aes(x = explicit, y = ..count..)) +
-  geom_bar(fill="#2d8076") +
-  labs(x = "Explicit", y = "Count Explicit")
-
-plot_instrumentalness <- ggplot(datos, aes(x = instrumentalness, y = popularity)) +
-  geom_point(color="#e8dc61") +
-  geom_smooth(method = "loess", se = FALSE, color="black") 
-  labs(x = "Instrumentalness", y = "Popularity")
-
-plot_liveness <- ggplot(datos, aes(x = liveness, y = popularity)) +
-  geom_point(color="#4a802d") +
-  geom_smooth(method = "loess", se = FALSE, color="black") 
-  labs(x = "Liveness", y = "Popularity")
-
-plot_loudness <- ggplot(datos, aes(x = loudness, y = popularity)) +
-  geom_point(color="violet") +
-  geom_smooth(method = "loess", se = FALSE, color="black") 
-  labs(x = "Loudness", y = "Popularity")
-
-plot_mode <- ggplot(datos, aes(x = mode, y = ..count..)) +
-  geom_bar(fill="#945abb") +
-  labs(x = "Mode", y = "Count")
-
-plot_speechiness <- ggplot(datos, aes(x = speechiness, y = popularity)) +
-  geom_point(color="brown") +
-  geom_smooth(method = "loess", se = FALSE, color="black") 
-  labs(x = "Speechiness", y = "Popularity")
-
-plot_tempo <- ggplot(datos, aes(x = tempo, y = popularity)) +
-  geom_point(color="orange") +
-  geom_smooth(method = "loess", se = FALSE, color="black") 
-  labs(x = "Tempo", y = "Popularity")
-
-```
-
-```{r}
-
-# Colocar los gráficos en un grid
-grid.arrange(
-  plot_valence, plot_acousticness, plot_danceability, plot_duration, plot_energy,
-  plot_explicit, plot_instrumentalness, plot_liveness, plot_loudness, plot_mode,
-  plot_speechiness, plot_tempo,
-  nrow = 4, ncol = 3
-)
-
-```
-
-## Selección de columnas
-
-```{r}
-
-full_data <- datos
-selected_datos <- datos[, c("popularity", "duration_ms","explicit","danceability","tempo","genre_numeric","popularity_artist")]
-selected_datos$explicit <- as.integer(selected_datos$explicit)
-selected_datos <- head(selected_datos,5000)
-selected_datos_small <- head(selected_datos,50)
-
 ```
 
 # Métodos
-[los métodos que se utilizarán para resolver el problema. Los vistos en clase y si se incluye alguno que no se revisó, mencionar referencias y una descripción muy general del método.]
 
 ## Modelo lineal
 
@@ -268,6 +89,8 @@ Donde:
   $x_i$​ es la variable predictora (por ejemplo, duración de la canción) para la observación i.
   $\beta_0$​ y $\beta_1$​ son los coeficientes del modelo.
   $\sigma_i$​ es el error aleatorio asociado con la observación i, que asumiremos normalmente distribuido con media cero y varianza constante.
+  
+**ojo se mencionan dos betas pero son 5 betas en el modelo**
 
 ```{r}
 
@@ -331,7 +154,7 @@ fit_lineal <- sampling(stan_model_lineal,
                                    dance = selected_datos_small$danceability,
                                    tempo = selected_datos_small$tempo,
                                    genre = selected_datos_small$genre_numeric), 
-                       iter=10000, warmup=3000)
+                       iter=10000, warmup=3000, seed=123)
 
 ```
 
@@ -346,7 +169,8 @@ Observamos intervalos de credibilidad
 
 ```{r}
 
-extract_lineal <- extract(fit_lineal)
+extract_lineal <- rstan::extract(fit_lineal, permuted = TRUE)
+
 
 stan_plot(fit_lineal, prob = 0.95)
 
@@ -483,7 +307,7 @@ stan_data <- list(
 
 
 # Ajustar el modelo a los datos
-fit <- sampling(stan_model, data = stan_data, chains = 4, iter = 50000, warmup = 5000)
+fit <- sampling(stan_model, data = stan_data, chains = 4, iter = 50000, warmup = 5000, seed=123)
 
 ```
 
@@ -585,10 +409,10 @@ n_songs = 20
 comp_simul <- list()
 
 for (i in 1:n_songs) {
-  mu_pred <- mean(extract(individual_fit)$intercept) + 
-             mean(extract(individual_fit)$beta_artist) * avg_popularity_artists
+  mu_pred <- mean(rstan::extract(individual_fit)$intercept) + 
+             mean(rstan::extract(individual_fit)$beta_artist) * avg_popularity_artists
              
-  pred_simuladas <- rnorm(10000, mean = mu_pred, sd = mean(extract(individual_fit)$sigma))
+  pred_simuladas <- rnorm(10000, mean = mu_pred, sd = mean(rstan::extract(individual_fit)$sigma))
 
   comp_simul[[i]] <- list(real_popularity = datos$popularity[i], simulated_popularity = pred_simuladas)
 }
@@ -686,7 +510,7 @@ stan_general_data <- list(
 
 
 # Ajustar el modelo a los datos
-general_fit <- sampling(general_model, data = stan_general_data, chains = 4, iter = 10000, warmup = 500)
+general_fit <- sampling(general_model, data = stan_general_data, chains = 4, iter = 10000, warmup = 500, seed=123)
 
 ```
 
@@ -713,10 +537,10 @@ n_songs = 20
 comp_simul <- list()
 
 for (i in 1:n_songs) {
-  mu_pred <- mean(extract(general_fit)$intercept) + 
-             mean(extract(general_fit)$beta_artist) * avg_popularity_artists
+  mu_pred <- mean(rstan::extract(general_fit)$intercept) + 
+             mean(rstan::extract(general_fit)$beta_artist) * avg_popularity_artists
              
-  pred_simuladas <- rnorm(10000, mean = mu_pred, sd = mean(extract(general_fit)$sigma))
+  pred_simuladas <- rnorm(10000, mean = mu_pred, sd = mean(rstan::extract(general_fit)$sigma))
 
   comp_simul[[i]] <- list(real_popularity = datos$popularity[i], simulated_popularity = pred_simuladas)
 }
@@ -833,11 +657,11 @@ n_songs = 20
 comp_simul <- list()
 
 for (i in 1:n_songs) {
-  mu_pred <- mean(extract(jerarquico_fit)$intercept) + 
-             mean(extract(jerarquico_fit)$beta_individual_artist) * datos$popularity_artist[i] +
-             mean(extract(jerarquico_fit)$beta_avg_artist) * avg_popularity_artists
+  mu_pred <- mean(rstan::extract(jerarquico_fit)$intercept) + 
+             mean(rstan::extract(jerarquico_fit)$beta_individual_artist) * datos$popularity_artist[i] +
+             mean(rstan::extract(jerarquico_fit)$beta_avg_artist) * avg_popularity_artists
              
-  pred_simuladas <- rnorm(10000, mean = mu_pred, sd = mean(extract(jerarquico_fit)$sigma))
+  pred_simuladas <- rnorm(10000, mean = mu_pred, sd = mean(rstan::extract(jerarquico_fit)$sigma))
 
   comp_simul[[i]] <- list(real_popularity = datos$popularity[i], simulated_popularity = pred_simuladas)
 }

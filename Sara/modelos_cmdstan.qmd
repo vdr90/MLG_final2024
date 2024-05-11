@@ -1,0 +1,278 @@
+---
+title: "modelos_cmdstan"
+author: "Sara"
+format: pdf
+editor: source
+---
+
+Bibliotecas:
+
+```{r message=FALSE}
+# library(rstan)
+library(tidyverse)
+library(cmdstanr)
+library(dplyr)
+# library('bayesplot')
+library("bayesrules")
+library(ggplot2)
+```
+
+Lectura de Datos:
+
+```{r}
+datos <- read.csv("datos/datos.csv")
+data(spotify)
+datos <- spotify
+glimpse(datos)
+```
+
+```{r}
+datos<-datos %>% filter(popularity>=1) %>% arrange(popularity)
+```
+
+
+```{r}
+artistas <- datos %>% group_by(artist) %>% summarise(popularity= mean(popularity), size = n()) %>% arrange(popularity)
+artistas
+```
+
+```{r}
+# Create a new data frame with unique artist names
+unique_artists <- tibble(artist = unique(datos$artist))
+
+# Add a unique ID to each artist
+unique_artists <- unique_artists %>%
+  mutate(artist_id = as.integer(row_number()))
+
+# Merge artist IDs back into the original data frame
+datos <- left_join(datos, unique_artists, by = "artist")
+artistas <- left_join(artistas, unique_artists, by = "artist")
+
+glimpse(datos)
+glimpse(artistas)
+```
+
+
+# Homogéneo
+
+$$Y_{ij}|\mu,\sigma \sim \mathcal{N}(\mu,\sigma^2)$$
+$$\mu \sim \mathcal{N}(50,52^2)$$
+$$\sigma \sim \text{Exp}(0.048)$$
+
+```{r}
+data_list_1 = list(
+  N = nrow(datos),
+  y = datos$popularity,
+  Nartist = max(datos$artist_id),
+  artist = datos$artist_id
+
+)
+
+modelo_homogeneo <- cmdstan_model("./proy_homogeneo.stan")
+print(modelo_homogeneo)
+```
+
+```{r}
+fit_mod1 <- modelo_homogeneo$sample(
+  data = data_list_1,
+  seed = 123,
+  chains = 4,
+  iter_sampling = 5000, 
+  iter_warmup = 1000,
+  # show_messages = FALSE,
+  # show_exceptions = FALSE
+  )
+```
+
+```{r}
+fit_mod1$summary()
+```
+
+```{r}
+resumen_1 <- fit_mod1$draws("mu_artist",format = "df") %>% 
+  as_tibble() %>% 
+  pivot_longer(cols = starts_with("mu_artist"), names_to = "variable") %>% 
+  select(variable, value) %>% 
+  group_by(variable) %>% 
+  summarise(media = mean(value),
+            q5 = quantile(value,0.05),
+            q95 = quantile(value,0.95)) %>% 
+  separate(variable, sep = "[\\[\\]]", into=c("variable", "artist_id"), extra="drop", convert = TRUE) 
+
+resumen_1 <- left_join(artistas, resumen_1, by = "artist_id")
+
+resumen_1 %>% 
+  ggplot(aes(x = reorder(artist, popularity), y = popularity), color = 'blue') +
+  geom_point(aes(y = media), color = "red") +
+  geom_linerange(aes(ymin = q5, ymax = q95), color = 'red') +
+  geom_point(aes(y = popularity, size = size), color = "black", alpha = 0.2) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+**pensar si cortar los datos entre 20 y 80**
+
+# Heterogéneo
+
+```{r}
+# unique_count <- datos %>% 
+#   summarize(unique_count = n_distinct(artists))
+```
+
+
+$$Y_{ij}|\mu_j,\sigma_j \sim \mathcal{N}(\mu_j,\sigma^2)$$
+$$\mu_j \sim \mathcal{N}(50,s_j^2)$$
+$$\sigma \sim \text{Exp}(0.048)$$
+
+```{r}
+data_list_2 = list(
+  N = nrow(datos),
+  y = datos$popularity,
+  Nartist = max(datos$artist_id),
+  artist = datos$artist_id
+
+)
+
+modelo_heterogeneo <- cmdstan_model("./proy_heterogeneo.stan")
+print(modelo_heterogeneo)
+```
+
+
+```{r}
+fit_mod2 <- modelo_heterogeneo$sample(
+  data = data_list_2,
+  seed = 123,
+  chains = 4,
+  iter_sampling = 5000, 
+  iter_warmup = 1000,
+  # show_messages = FALSE,
+  # show_exceptions = FALSE
+  )
+```
+
+
+
+```{r}
+fit_mod2$summary()
+```
+
+
+```{r}
+resumen_2 <- fit_mod2$draws("mu_artist",format = "df") %>% 
+  as_tibble() %>% 
+  pivot_longer(cols = starts_with("mu_artist"), names_to = "variable") %>% 
+  select(variable, value) %>% 
+  group_by(variable) %>% 
+  summarise(media = mean(value),
+            q5 = quantile(value,0.05),
+            q95 = quantile(value,0.95)) %>% 
+  separate(variable, sep = "[\\[\\]]", into=c("variable", "artist_id"), extra="drop", convert = TRUE) 
+
+resumen_2 <- left_join(artistas, resumen_2, by = "artist_id")
+
+resumen_2 %>% 
+  ggplot(aes(x = reorder(artist, popularity), y = popularity), color = 'blue') +
+  geom_point(aes(y = media), color = "red") +
+  geom_linerange(aes(ymin = q5, ymax = q95), color = 'red') +
+  geom_point(aes(y = popularity, size = size), color = "black", alpha = 0.2) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+
+# Jerárquico
+$$Y_{ij}|\mu_j,\sigma_y \sim \mathcal{N}(\mu_j,\sigma_y^2)$$
+$$\mu_j|\mu,\sigma_\mu \sim \mathcal{N}(\mu,\sigma_\mu^2)$$
+$$\sigma_y \sim \text{Exp}(0.048)$$
+$$\sigma_mu \sim \text{Exp}(1)$$
+
+```{r}
+data_list_3 = list(
+  N = nrow(datos),
+  y = datos$popularity,
+  Nartist = max(datos$artist_id),
+  artist = datos$artist_id
+
+)
+
+modelo_jerarquico <- cmdstan_model("./proy_jerarquico.stan")
+print(modelo_jerarquico)
+```
+
+```{r}
+fit_mod3 <- modelo_jerarquico$sample(
+  data = data_list_3,
+  seed = 123,
+  chains = 4,
+  iter_sampling = 5000, 
+  iter_warmup = 1000,
+  # show_messages = FALSE,
+  # show_exceptions = FALSE
+  )
+```
+
+
+```{r}
+fit_mod3$summary()
+```
+
+```{r}
+resumen_3 <- fit_mod2$draws("mu_artist",format = "df") %>% 
+  as_tibble() %>% 
+  pivot_longer(cols = starts_with("mu_artist"), names_to = "variable") %>% 
+  select(variable, value) %>% 
+  group_by(variable) %>% 
+  summarise(media = mean(value),
+            q5 = quantile(value,0.05),
+            q95 = quantile(value,0.95)) %>% 
+  separate(variable, sep = "[\\[\\]]", into=c("variable", "artist_id"), extra="drop", convert = TRUE) 
+
+resumen_3 <- left_join(artistas, resumen_3, by = "artist_id")
+
+resumen_3 %>% 
+  ggplot(aes(x = reorder(artist, popularity), y = popularity), color = 'blue') +
+  geom_point(aes(y = media), color = "red") +
+  geom_linerange(aes(ymin = q5, ymax = q95), color = 'red') +
+  geom_point(aes(y = popularity, size = size), color = "black", alpha = 0.2) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+
+
+# DAG
+
+
+
+```{r}
+data_list_4 = list(
+  N = nrow(datos),
+  y = datos$popularity,
+  Nartist = max(datos$artist_id),
+  artist = datos$artist_id,
+  valence = datos$valence
+
+)
+
+modelo_dag <- cmdstan_model("./proy_dag.stan")
+print(modelo_jerarquico)
+```
+```{r}
+fit_mod4 <- modelo_dag$sample(
+  data = data_list_4,
+  seed = 123,
+  chains = 4,
+  iter_sampling = 5000, 
+  iter_warmup = 1000,
+  # show_messages = FALSE,
+  # show_exceptions = FALSE
+  )
+```
+
+```{r}
+fit_mod4$summary()
+```
+
+
+
+
+
+
+
+
+

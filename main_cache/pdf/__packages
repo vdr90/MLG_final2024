@@ -1,0 +1,15 @@
+StanHeaders
+rstan
+ggplot2
+gridExtra
+tidyverse
+tibble
+tidyr
+readr
+purrr
+dplyr
+stringr
+forcats
+lubridate
+cmdstanr
+rsample
