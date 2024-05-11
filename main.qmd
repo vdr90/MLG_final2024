@@ -701,6 +701,11 @@ par(mar = c(5, 4, 4, 2) + 0.1)
 ```
 
 # Resultados
+
+
+
+
+
 [La aplicación de los métodos a los datos. Los resultados deben ser presentados en forma fácil de entender, a través de gráficas, tablas de resumen de los resultados. En todos los casos, las gráficas y tablas tienen que ser relevantes para la comunicación de los resultados, no tienen que ser redundantes, y tienen que ser correctas.]
 
 # Conclusiones
