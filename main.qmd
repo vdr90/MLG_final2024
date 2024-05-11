@@ -41,7 +41,6 @@ Para nuestro proyecto haremos tres tipos de modelos:
 
 Las librerías que utilizamos son las soguientes:
 
-### Librerias
 ```{r message=FALSE, results="hide"}
 library(rstan)
 library(ggplot2)
