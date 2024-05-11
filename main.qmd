@@ -720,19 +720,19 @@ par(mar = c(5, 4, 4, 2) + 0.1)
 
 ```
 
-# Resultados	
+## Resultados	
 
 [La aplicación de los métodos a los datos. Los resultados deben ser presentados en forma fácil de entender, a través de gráficas, tablas de resumen de los resultados. En todos los casos, las gráficas y tablas tienen que ser relevantes para la comunicación de los resultados, no tienen que ser redundantes, y tienen que ser correctas.]	
 
-# Conclusiones	
+## Conclusiones	
 
 [un resumen de la conclusión del estudio, en donde se especifíque cómo se resolvió el problema propuesto, así como futuras vías de ampliación del estudio. También mencionar las limitaciones que se encontraron, y porqué no se pudieron atacar algunos aspectos originales del problema.]	
 
-# Fuentes	
+## Fuentes	
 
 [fuentes bibliográficas utilizadas.]	
 
-# Anexos	
+## Anexos	
 
 [en caso de que sea necesario hacer tablas o resultados extensivos, será conveniente ponerlos en un anexo. No se aceptarán salidas extensas como parte principal del reporte.]	
 
