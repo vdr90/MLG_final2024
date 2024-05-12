@@ -723,13 +723,25 @@ par(mar = c(5, 4, 4, 2) + 0.1)
 
 [La aplicación de los métodos a los datos. Los resultados deben ser presentados en forma fácil de entender, a través de gráficas, tablas de resumen de los resultados. En todos los casos, las gráficas y tablas tienen que ser relevantes para la comunicación de los resultados, no tienen que ser redundantes, y tienen que ser correctas.]	
 
+Sí bien logramos ver una mejora considerable cuando pasamos del modelo que considera una misma ppularidad media para los artistas, al modelo que considera una componente de popularidad del artista y una de la canción (homogéneo y heterogéneo, respectivamente). En el siguiente paso, del modelo heterogéneo al jerárquico, la mejorá no es tan apreciable debido a que tenemos muy pocas canciones por artista (1 o dos en promedio), por lo que el modelo jerárquico no tiene mucha información con la cual mejorar su predicción.
+
+Abajo en las gráficas se pueden apreciar estos resultados:
+
+![Modelo homogéneo](./Sara/Rplot04.png)
+![Modelo heterogéneo](./Sara/Rplot05.png)
+![Modelo Jerárquico](./Sara/Rplot06.png)
+
+
 ## Conclusiones	
+
+
 
 [un resumen de la conclusión del estudio, en donde se especifíque cómo se resolvió el problema propuesto, así como futuras vías de ampliación del estudio. También mencionar las limitaciones que se encontraron, y porqué no se pudieron atacar algunos aspectos originales del problema.]	
 
 ## Fuentes	
 
-[fuentes bibliográficas utilizadas.]	
+* Johnson, A. A., Ott, M. Q., & Dogucu, M. (2022). Bayes rules! an introduction to applied Bayesian modeling. CRC Press. 
+* 
 
 ## Anexos	
 
