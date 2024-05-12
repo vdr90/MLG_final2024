@@ -17,16 +17,15 @@ library(cmdstanr)
 library(rsample)
 ```
 
-
 ### Muestra de los datos
 
 ```{r}
 datos <- read.csv("datos/datos.csv") 
 set.seed(35222)
-data_split <- initial_split(datos, prop = .25)
+data_split <- initial_split(datos, prop = .044)
 datos <- training(data_split)
+nrow(datos)
 ```
-
 
 #### Asignacion de valores numéricos a los géneros
 
@@ -42,7 +41,6 @@ diccionario_generos <- setNames(seq_along(generos_unicos), generos_unicos)
 datos$genre_numeric <- diccionario_generos[datos$genre_factor]
 
 ```
-
 
 #### Asignación de valores numéricos al artista
 
@@ -69,8 +67,7 @@ datos <- transform(datos,
 
 #### Agregar media de popularidad por artista
 
-* Obtenemos popularidad del artista mediante la media de sus popularidades
-
+-   Obtenemos popularidad del artista mediante la media de sus popularidades
 
 ```{r}
 
@@ -83,9 +80,7 @@ datos <- merge(datos, media_popularidad_por_artista, by = "artists_numeric", all
 
 ```
 
-
 ### Exploración de los datos
-
 
 ```{r}
 
@@ -199,22 +194,12 @@ modelo_homogeneo <- cmdstan_model("./proy_homogeneo.stan")
 print(modelo_homogeneo)
 ```
 
-
 ```{r}
 modelo_heterogeneo <- cmdstan_model("./proy_heterogeneo.stan")
 print(modelo_heterogeneo)
 ```
 
-
 ```{r}
 modelo_jerarquico <- cmdstan_model("./proy_jerarquico.stan")
 print(modelo_jerarquico)
 ```
-
-
-
-
-
-
-
-
