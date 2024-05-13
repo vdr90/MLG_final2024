@@ -1,0 +1,163 @@
+---
+title: "Valencia"
+author: "Valeria Duran"
+format: html
+editor: visual
+---
+
+### Librerias
+```{r message=FALSE, results="hide"}
+
+#install.packages("spotifyr")
+#install.packages("bayesrules")
+library(rstan)
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+
+```
+
+Cargamos los datos
+```{r}
+datos <- read.csv("datos/datos.csv")
+
+#Valores numéricos a los géneros
+datos$genre_factor <- factor(datos$track_genre)
+generos_unicos <- levels(datos$genre_factor)
+
+#Diccionario
+diccionario_generos <- setNames(seq_along(generos_unicos), generos_unicos)
+datos$genre_numeric <- diccionario_generos[datos$genre_factor]
+
+#Valores numéricos al artista
+datos$artists_factor <- factor(datos$artists)
+artistas_unicos <- levels(datos$artists_factor)
+
+#Diccionario
+diccionario_artists <- setNames(seq_along(artistas_unicos), artistas_unicos)
+
+datos$artists_numeric <- diccionario_artists[datos$artists_factor]
+
+datos <- transform(datos,
+                explicit = ifelse(explicit, 1, 0))
+
+media_popularidad_por_artista <- aggregate(popularity ~ artists_numeric, data = datos, FUN = mean)
+
+names(media_popularidad_por_artista)[2] <- "popularity_artist"
+
+datos <- merge(datos, media_popularidad_por_artista, by = "artists_numeric", all.x = TRUE)
+
+```
+
+
+```{r}
+#Variables de interés
+full_data <- datos
+selected_datos <- datos[, c("popularity", "valence", "duration_ms","explicit","danceability","tempo","genre_numeric","popularity_artist")]
+selected_datos$explicit <- as.integer(selected_datos$explicit)
+selected_datos <- head(selected_datos,5000)
+selected_datos_small <- head(selected_datos,50)
+
+avg_popularity_artists <- mean(selected_datos$popularity_artist)
+```
+
+## Modelo jarárquico incluyendo la valencia con DAG
+
+```{r}
+jer_val_code <- "
+data {
+  int<lower=0> N;                     // Número de observaciones
+  vector[N] popularity_artist;        // Popularidad individual del artista
+  real popularity_avg_artist;         // Popularidad promedio entre artistas
+  vector[N] popularity;               // Popularidad de la canción
+  vector[N] valence;                  // Valencia de la canción
+}
+
+parameters {
+  real intercept;                     // Intercepto
+  real beta_individual_artist;        // Coeficiente de la popularidad individual del artista
+  real beta_avg_artist;               // Coeficiente de la popularidad promedio entre artistas
+  real beta_valence;                  // Coeficiente de la valencia
+  real<lower=0> sigma;                // Desviación estándar de los errores
+}
+
+model {
+  // Priors
+  intercept ~ normal(0, 1);          // Prior para el intercepto
+  beta_individual_artist ~ normal(0, 1);  // Prior para el coeficiente de la popularidad individual del artista
+  beta_avg_artist ~ normal(0, 1);     // Prior para el coeficiente de la popularidad promedio entre artistas
+  beta_valence ~ normal(0, 1);        // Prior para el coeficiente de la valencia
+  sigma ~ normal(0, 1);               // Prior para la desviación estándar
+
+  // Likelihood
+  for (i in 1:N) {
+    // Modelo lineal jerárquico
+    popularity[i] ~ normal(intercept + beta_individual_artist * popularity_artist[i] + beta_avg_artist * popularity_avg_artist + beta_valence * valence[i], sigma);
+  }
+}
+"
+
+jer_val_model <- stan_model(model_code = jer_val_code)
+
+```
+
+Ejecución del modelo
+```{r message= FALSE, results="hide"}
+
+stan_jer_val_data <- list(
+  N = nrow(selected_datos),
+  popularity = selected_datos$popularity,
+  valence = selected_datos$valence,
+  popularity_avg_artist = avg_popularity_artists,
+  popularity_artist = selected_datos$popularity_artist
+)
+
+
+# Ajustar el modelo a los datos
+jer_val_fit <- sampling(jer_val_model, data = stan_jer_val_data, chains = 4, iter = 10000, warmup = 500)
+
+print(jer_val_fit)
+
+```
+
+#DAG (Grafo Acíclico Dirigido, por sus siglas en inglés)
+
+*Popularidad de la canción (popularity):
+La popularidad de una canción puede ser influenciada por diversos factores, entre ellos, la calidad de la música en sí misma y cómo resuena con el público objetivo.
+
+*Popularidad individual del artista (popularity_artist):
+La popularidad de un artista puede influir en la percepción y el interés del público hacia sus nuevas canciones. Los seguidores de un artista pueden estar más dispuestos a escuchar y apoyar nuevas producciones.
+
+*Popularidad promedio entre artistas (popularity_avg_artist):
+La popularidad promedio entre artistas podría representar el contexto musical general en el que se encuentra la canción. Por ejemplo, si la mayoría de las canciones lanzadas recientemente por otros artistas tienen una alta popularidad, esto podría aumentar las expectativas del público y afectar la percepción de la nueva canción.
+
+*Valencia (valence):
+La valencia de la música, es decir, su capacidad para transmitir emociones y sensaciones auténticas, puede tener un efecto directo en cómo el público la percibe y la valora. Una música con alta valencia podría resonar más con los oyentes y aumentar su disposición a compartir y apoyar la canción.
+
+Proponemos un DAG donde las flechas indican la dirección de la causalidad, sugiriendo que la popularidad del artista y la popularidad promedio entre artistas podrían influir en la valencia de la música, que a su vez afecta la popularidad de la canción.
+
+```{r}
+library(DiagrammeR)
+
+grViz("
+digraph {
+  graph [ranksep = 0.2, rankdir = LR]
+  node [shape=plaintext]
+  C
+  A
+  P
+  V
+  edge [minlen = 3]
+  A -> P -> C
+  V -> C
+}
+", width = 400)
+
+```
+
+donde C es la popularidad de la canción, \n
+      A es la popularidad individual del artista, \n
+      P es la popularidad promedio entre artistas y \n
+      V es la valencia de la canción.
+
+
