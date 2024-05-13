@@ -19,11 +19,11 @@ execute:
 De acuerdo con Wikipedia, en la plataforma de Spotify se tiene acceso a más de 100 millones de canciones. Algunas canciones son más populares que otras. Definimos a la variable $Y$ como un rating de popularidad con $Y ∈ [0, 100]$. En general, entre más reproducciones recientes tenga una una canción, su rating de popularidad será mayor.
 
 Sabemos que la popularidad de una canción, no siempre es reflejo de su calidad, popularidad a largo plazo, o popularidad a fuera de la audiencia de Spotify.
-Además del artista hay otras características que hacen popular a una canción, como la “valencia”, que define qué tan alegre suena una pieza.
+Además del artista, hay otras características que hacen popular a una canción, como la “valencia”, que define qué tan alegre suena una pieza.
 
 Para el proyecto nos enfocaremos en entender:
 
-**Falta mencionar el modelo lineal y modelo lineal con prioris informativas**
+* Algunas de las variables que afectan la popularidad de las caciones y en que grado, mediante un análisis con metodos lineales generalizados.
 * ¿Cuál es la popularidad típica de una canción en Spotify?
 * ¿Hasta dónde influye el artista en la popularidad de la canción?
 * Para un sólo artista, ¿cómo varía la popularidad de sus canciones?
@@ -31,15 +31,18 @@ Para el proyecto nos enfocaremos en entender:
 
 Métodos:
 
-Para nuestro proyecto haremos tres tipos de modelos:
-1) Modelo con parámetros homogéneos: Modelar la popularidad de las canciones sin tomar en cuenta el artista.
-2) Modelo con parámetros heterogéneos: Modelar la popularidad de las canciones tomando en cuenta a los artistas que las interpretan.
-3) Modelo jerárquico: Una alternativa intermedia donde permitimos que la distribución inicial sobre la popularidad pueda adaptarse a los datos. Y comparar sus distribuciones predictivas con los datos observados, para ver cuál modela mejor y porqué.
-3b) Modelo jerárquico con DAG: Haremos un DAG para agregar la variable de valencia al modelo jerárquico.
+Para nuestro proyecto haremos uso de distintos tipos de modelos:
+
+1. Para el objetivo inicial, generaremos un modelo lineal generalizado con prioris poco informativas y haciendo uso de las variables popularity,duration, explicit, danceability, tempo y genre, lo que nos permitirá conocer los aspectos más relevantes y el impacto de dichas variables en la popularidad de las canciones.
+2. Compararemos el modelo del método 1 con un modelo con prioris informativas.
+3. Modelo con parámetros homogéneos: Modelar la popularidad de las canciones sin tomar en cuenta el artista.
+4. Modelo con parámetros heterogéneos: Modelar la popularidad de las canciones tomando en cuenta a los artistas que las interpretan.
+5. Modelo jerárquico: Una alternativa intermedia donde permitimos que la distribución inicial sobre la popularidad pueda adaptarse a los datos. Y comparar sus distribuciones predictivas con los datos observados, para ver cuál modela mejor y porqué.
+6. Modelo jerárquico con DAG: Haremos un DAG para agregar la variable de valencia al modelo jerárquico.
 
 
 
-Las librerías que utilizamos son las soguientes:
+Las librerías que utilizamos son las siguientes:
 
 ```{r message=FALSE, results="hide"}
 library(rstan)
@@ -64,7 +67,7 @@ selected_datos <- read.csv("datos/selected_datos.csv")
 glimpse(datos)
 ```
 
-Tenemos 114 mil registros de canciones y 21 características que los representan.Sin embargo vamos a ocupar sólo una muestra de 57,000 canciones. En el Anexo 1 de este trabajo se encuentra la limpieza y adecuación de datos para su uso en la modelación de la popularidad de las canciones.
+Tenemos 114 mil registros de canciones y 21 características que los representan, sin embargo, vamos a ocupar sólo una muestra de 57,000 canciones. En el Anexo 1 de este trabajo se encuentra la limpieza y adecuación de datos para su uso en la modelación de la popularidad de las canciones.
 
 ```{r}
 datos <- read.csv("datos/muestra.csv")
@@ -77,7 +80,12 @@ print(summary(datos))
 
 ```
 
-Cabe destacar que la popularidad va de 0 a 100, con una mediana de 33.24. Por su parte, la danzabilidad se mide entre 0 y 1 con una mediana de 0.57; asimismo, la energía varía entre 0 y 1 con una mediana de 0.64. La valencia oscila entre 0 y 1 con una mediana de 0.47, mientras que el tempo va de 0 a 243.37 con una mediana de 122.15.
+Cabe destacar que:
+* la popularidad va de 0 a 100, con una mediana de 33.24. 
+* la danzabilidad se mide entre 0 y 1 con una mediana de 0.57; 
+* la energía varía entre 0 y 1 con una mediana de 0.64. 
+* la valencia oscila entre 0 y 1 con una mediana de 0.47 y, 
+* el tempo va de 0 a 243.37 con una mediana de 122.15.
 
 ## Métodos
 
@@ -87,18 +95,18 @@ Generamos un modelo lineal con priors poco informativas.
 
 El modelo lineal simple lo expresamos como:
 
-$y_i=\beta_0 + \beta_1 * x_i + \sigma_i​$
+$y_i=  \beta * x_i + \sigma_i​$
 
 Donde:
 
   $y_i$​ es la popularidad de la observación i.
-  $x_i$​ es la variable predictora (por ejemplo, duración de la canción) para la observación i.
-  $\beta_0$​ y $\beta_1$​ son los coeficientes del modelo.
+  $x_i$​ representa una variable predictora (por ejemplo, duration) para la observación i.
+  $\beta$​  representa el coeficiente del modelo.
   $\sigma_i$​ es el error aleatorio asociado con la observación i, que asumiremos normalmente distribuido con media cero y varianza constante.
 
-**ojo se mencionan dos betas pero son 5 betas en el modelo**
+Para nuestro ejercicio requerimos 5 betas para cada una de las variables predictoras que usaremos.
 
-```{r}
+```{r message= FALSE, results="hide"}
 
 stan_code_lineal <- "
 data {
@@ -184,7 +192,7 @@ stan_plot(
 
 ```
 
-Podemos ver tambien, al observar los coeficientes, que el género y el grado de "daceability" tienen una mayor influencia sobre la popularidad de una canción.
+Podemos ver tambien, al observar los coeficientes, que el género y el grado de "danceability" tienen una mayor influencia sobre la popularidad de una canción.
 
 ### Modelo lineal con prioris informativas
 
@@ -214,19 +222,19 @@ Proponemos como distribuciones iniciales las siguientes:
 
   * Explicita: 
   
-    La bariable "explicita" es una variable que tomará los valores 0 y 1. Usaremos entonces una distribución Beta para modelarla.
+    La variable "explicita" es una variable que tomará los valores 0 y 1. Usaremos entonces una distribución Beta para modelarla.
 
     * explicita ~ Beta($\rho$) 
 
   * Bailable:
 
-    Ya que los valores que toma esta variable se encuentran entre 0 y 1, utilizaremos uns distribución Beta.
+    Ya que los valores que toma esta variable se encuentran entre 0 y 1, utilizaremos una distribución Beta.
 
     * bailable ~ Beta($\alpha$,$\beta$)
 
   * Tempo:
 
-    Variable continua entre 0 y 244. Utilizaremos una distribución normal truncada
+    Variable continua entre 0 y 244. Utilizaremos una distribución normal truncada.
 
     * tempo ~ N+($\mu$,$\sigma$)
 
@@ -238,7 +246,7 @@ Proponemos como distribuciones iniciales las siguientes:
 
  Utilizaremos un modelo lineal generalizado (GLM) donde la popularidad sea una función lineal de las demás variables, teniendo en cuenta la naturaleza discreta de la popularidad (valores enteros entre 0 y 100).
 
-```{r}
+```{r message= FALSE, results="hide"}
 
   stan_code <- "
   data {
@@ -345,7 +353,7 @@ Notamos que entre los coeficientes más altos se encuentran: genero, "danceabili
 
 El siguente modelo considerará solo la popularidad del artista como predictor de la popularidad de la canción.
 
-```{r}
+```{r message= FALSE, results="hide"}
 
 individual_code <-"
 data {
@@ -413,7 +421,7 @@ stan_plot(
 
 Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.
 
-En el siguiente gráfico puede observarse un intervalod el 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.
+En el siguiente gráfico puede observarse un intervalo del 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.
 
 ```{r}
 avg_popularity_artists <- mean(selected_datos$popularity_artist)
@@ -468,7 +476,7 @@ par(mar = c(5, 4, 4, 2) + 0.1)
 
 ### Modelo popularidad entre artistas
 
-```{r}
+```{r message= FALSE, results="hide"}
 
 general_stan_code <-" 
 data {
@@ -546,7 +554,7 @@ stan_plot(
 
 Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.
 
-En el siguiente gráfico puede observarse un intervalod el 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.
+En el siguiente gráfico puede observarse un intervalo del 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.
 
 ```{r}
 
@@ -668,7 +676,7 @@ stan_plot(
 
 Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.
 
-En el siguiente gráfico puede observarse un intervalod el 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.
+En el siguiente gráfico puede observarse un intervalo del 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.
 
 ```{r}
 
@@ -719,11 +727,28 @@ par(mar = c(5, 4, 4, 2) + 0.1)
 
 ```
 
+
 ## Resultados	
 
-[La aplicación de los métodos a los datos. Los resultados deben ser presentados en forma fácil de entender, a través de gráficas, tablas de resumen de los resultados. En todos los casos, las gráficas y tablas tienen que ser relevantes para la comunicación de los resultados, no tienen que ser redundantes, y tienen que ser correctas.]	
+* **Análisis general de popularidad mediante Modelos lineales Generalizados**
+  
+Los tres modelos creados para analizar la popularidad de canciones en Spotify ofrecen un panorama progresivo de cómo diversos factores influyen en la percepción y aceptación de una canción por parte de los usuarios de la aplicación. El primer modelo, basado en prioris no informativas, establece un punto de partida fundamental al recopilar cinco variables predictoras clave; este enfoque inicial permite comprender la relación entre estas variables y la popularidad de las canciones. En contraste, el segundo modelo introduce prioris informativas, que aprovechan el conocimiento previo para mejorar la precisión de las predicciones;  esta inclusión de información contextual refleja de mejor forma la realidad y las tendencias de popularidad de las canciones. Finalmente, el tercer modelo expande aún más la comprensión al agregar una variable adicional, lo que permite evaluar cómo este nuevo factor afecta la popularidad de las canciones. Este enfoque más completo revela cómo la inclusión de diferentes aspectos puede modular la percepción de una canción por parte del público. 
 
-Sí bien logramos ver una mejora considerable cuando pasamos del modelo que considera una misma ppularidad media para los artistas, al modelo que considera una componente de popularidad del artista y una de la canción (homogéneo y heterogéneo, respectivamente). En el siguiente paso, del modelo heterogéneo al jerárquico, la mejorá no es tan apreciable debido a que tenemos muy pocas canciones por artista (1 o dos en promedio), por lo que el modelo jerárquico no tiene mucha información con la cual mejorar su predicción.
+En resumen, estos modelos proporcionan una perspectiva incremental y enriquecedora para entender la dinámica detrás de la popularidad de las canciones en la plataforma de Spotify, destacando la importancia de considerar tanto los datos como el contexto para obtener resultados precisos.
+
+* **Modelos homogéneos y jerárquico**
+
+Los dos modelos homogéneos planteados en este trabajo, proporcionan perspectivas simples pero esclarecedoras. En  el primer modelo, calculamos la media de la popularidad para cada artista de manera individual, lo que ofreció una visión detallada de cómo cada artista impacta la popularidad de sus canciones sin considerar la interacción con otros artistas. El segundo modelo, al calcular la media de todos los artistas de forma conjunta, ofrece una visión generalizada al considerar la interacción de la popularidad entre todos los artistas, sin embargo, perdimos la distinción de la influencia de cada artista en particular.
+
+En contraste, el modelo jerárquico adopta una perspectiva más compleja, pues considera tanto la variabilidad entre artistas como la media general de popularidad. Este enfoque nos permitió capturar tanto la influencia individual de cada artista como la variabilidad global entre ellos, ofreciendonos una comprensión más completa del fenómeno.
+
+Aunque los modelos planos simplifican el análisis al centrarse exclusivamente en el efecto del artista, el enfoque jerárquico proporcionó una visión más completa al permitir la evaluación de múltiples niveles de influencia. Sin embargo, únicamente incluimos la popularidad dada y las popularidades generadas individuales y colectivas de los artistas, por lo que, consideramos que la exclusión de otras variables predictoras pudo haber limitado la comprensión total de la popularidad de las canciones en la aplicación de streaming; por lo tanto, en futuros análisis consideraremos la inclusión de más variables predictoras para obtener una imagen más precisa y completa del problema.
+  
+* [La aplicación de los métodos a los datos. Los resultados deben ser presentados en forma fácil de entender, a través de gráficas, tablas de resumen de los resultados. En todos los casos, las gráficas y tablas tienen que ser relevantes para la comunicación de los resultados, no tienen que ser redundantes, y tienen que ser correctas.]	
+
+* ****
+
+Sí bien logramos ver una mejora considerable cuando pasamos del modelo que considera una misma popularidad media para los artistas, al modelo que considera una componente de popularidad del artista y una de la canción (homogéneo y heterogéneo, respectivamente). En el siguiente paso, del modelo heterogéneo al jerárquico, la mejorá no es tan apreciable debido a que tenemos muy pocas canciones por artista (1 o dos en promedio), por lo que el modelo jerárquico no tiene mucha información con la cual mejorar su predicción.
 
 Abajo en las gráficas se pueden apreciar estos resultados:
 
@@ -741,9 +766,14 @@ Abajo en las gráficas se pueden apreciar estos resultados:
 ## Fuentes	
 
 * Johnson, A. A., Ott, M. Q., & Dogucu, M. (2022). Bayes rules! an introduction to applied Bayesian modeling. CRC Press. 
-* 
+* Kaggle. (2021). Spotify Tracks Dataset [Archivo de datos CSV]. Recuperado de https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset?select=dataset.csv
 
 ## Anexos	
+
+**Anexo 1: Limpieza, Adecuación y Exploración de la Base de Datos de Spotify**
+
+El Anexo 1 incluye información detallada sobre la exploración inicial de la base de datos de canciones de Spotify, así como los procedimientos de limpieza y adecuación de los datos. Se presenta un análisis exhaustivo de la estructura y calidad de los datos, identificando y abordando posibles errores, valores atípicos y datos faltantes. Además, se describen las transformaciones realizadas para preparar los datos para su posterior análisis. 
+
 
 [en caso de que sea necesario hacer tablas o resultados extensivos, será conveniente ponerlos en un anexo. No se aceptarán salidas extensas como parte principal del reporte.]	
 
