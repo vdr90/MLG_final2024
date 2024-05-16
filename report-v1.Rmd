@@ -25,11 +25,11 @@ library(kableExtra)
 
 De acuerdo con Wikipedia, en la plataforma de Spotify se tiene acceso a más de 100 millones de canciones. Algunas canciones son más populares que otras. Definimos a la variable $Y$ como un rating de popularidad con $Y ∈ [0, 100]$. En general, entre más reproducciones recientes tenga una una canción, su rating de popularidad será mayor.
 
-Sabemos que la popularidad de una canción, no siempre es reflejo de su calidad, popularidad a largo plazo, o popularidad a fuera de la audiencia de Spotify. Además del artista, hay otras características que hacen popular a una canción, como la “valencia”, que define qué tan alegre suena una pieza.
+Sabemos que la popularidad de una canción, no siempre es reflejo de su calidad, popularidad a largo plazo, o popularidad afuera de la audiencia de Spotify. Además del artista, hay otras características que hacen popular a una canción, como la “valencia”, que define qué tan alegre suena una pieza.
 
 Para el proyecto nos enfocaremos en entender:
 
--   Algunas de las variables que afectan la popularidad de las caciones y en qué grado.
+-   Algunas de las variables que afectan la popularidad de las canciones y en qué grado.
 -   ¿Cuál es la popularidad típica de una canción en Spotify?
 -   ¿Hasta dónde influye el artista en la popularidad de la canción?
 -   Para un sólo artista, ¿cómo varía la popularidad de sus canciones?
@@ -39,7 +39,7 @@ Métodos:
 
 Para nuestro proyecto haremos uso de distintos tipos de modelos:
 
-1.  Para el objetivo inicial, generaremos un modelo lineal generalizado con priors poco informativas haciendo uso de las variables popularity, duration, explicit, danceability, tempo y genre. Esto nos permitirá conocer los aspectos más relevantes y el impacto de dichas variables en la popularidad de las canciones.
+1.  Para el objetivo inicial, generaremos un modelo lineal generalizado con priors poco informativas haciendo uso de las variables 'popularity', 'duration', 'explicit', 'danceability', 'tempo' y 'genre'. Esto nos permitirá conocer los aspectos más relevantes y el impacto de dichas variables en la popularidad de las canciones.
 2.  Compararemos el modelo anterior con un modelo con priors informativas.
 3.  Modelo con parámetros homogéneos: Modelar la popularidad de las canciones sin tomar en cuenta el artista.
 4.  Modelo con parámetros heterogéneos: Modelar la popularidad de las canciones tomando en cuenta a los artistas que las interpretan.
@@ -57,7 +57,7 @@ selected_datos <- read.csv("datos/selected_datos.csv")
 glimpse(datos)
 ```
 
-Tenemos 114 mil registros de canciones y 21 características que los representan, entre las cuales destaca el identificador de la canción, el artista, el álbum en el que fue publicada, la popularidad, su duración, entre otras características. Sin embargo, vamos a ocupar sólo una muestra de 5,000 canciones debido al desarrollo del modelado. Nos enfocaremos en el análisis y modelado de la popularidad, sin embargo, en el anexo 1 de este trabajo se muestra la limpieza y adecuación de los datos utilizados.
+Tenemos 114 mil registros de canciones y 21 características que los representan, entre las cuales destaca el identificador de la canción, el artista, el álbum en el que fue publicada, la popularidad, su duración, entre otras características. Debido al desarrollo del modelado, vamos a ocupar sólo una muestra de 5,000 canciones. Nos enfocaremos en el análisis y modelado de la popularidad, sin embargo, en el anexo 1 de este trabajo se puede consultar la limpieza y adecuación de los datos utilizados.
 
 ```{r}
 datos <- read.csv("datos/muestra.csv")
@@ -76,14 +76,14 @@ $y_i = \beta * x_i + \sigma_i​$
 
 Donde:
 
-* $y_i$​ es la popularidad de la observación i. 
-* $x_i$​ representa una variable predictora (por ejemplo, duration) para la observación i. 
+* $y_i$​ es la popularidad de la observación $i$. 
+* $x_i$​ representa una variable predictora (por ejemplo, 'duration') para la observación i. 
 * $\beta$​ representa el coeficiente del modelo. 
-* $\sigma_i$​ es el error aleatorio asociado con la observación i, que asumiremos normalmente distribuido con media cero y varianza constante.
+* $\sigma_i$​ es el error aleatorio asociado con la observación $i$, que asumiremos normalmente distribuido con media cero y varianza constante.
 
 Para nuestro ejercicio requerimos 5 betas para cada una de las variables predictoras que usaremos.
 
-```{r message= FALSE, results="hide"}
+```{r message=FALSE, results="hide"}
 
 stan_code_lineal <- "
 data {
@@ -666,7 +666,7 @@ par(mfrow=c(1, 1))
 par(mar = c(5, 4, 4, 2) + 0.1)
 ```
 
-## 6) Modelo jarárquico incluyendo la valencia con DAG
+## 6) Modelo jerárquico incluyendo la valencia con DAG
 
 Incluimos la valencia en los datos
 
@@ -787,9 +787,9 @@ Los tres modelos iniciales creados para analizar la popularidad de canciones en 
 
 En resumen, estos modelos proporcionan una perspectiva incremental y enriquecedora para entender la dinámica detrás de la popularidad de las canciones en la plataforma de Spotify, destacando la importancia de considerar tanto los datos como el contexto para obtener resultados precisos.
 
--   **Modelos homogéneos y jerárquico**
+-   **Modelos heterogéneo, homogéneo y jerárquico**
 
-Los dos modelos homogéneos planteados en este trabajo, proporcionan perspectivas simples pero esclarecedoras. En el primer modelo calculamos la media de la popularidad para cada artista de manera individual, lo que ofreció una visión detallada de cómo cada artista impacta la popularidad de sus canciones sin considerar la interacción con otros artistas. El segundo modelo, al calcular la media de todos los artistas de forma conjunta, ofrece una visión generalizada al considerar la interacción de la popularidad entre todos los artistas, sin embargo, perdimos la distinción de la influencia de cada artista en particular.
+Los modelos heterogéneo y homogéneo planteados en este trabajo, proporcionan perspectivas simples pero esclarecedoras. En el primer modelo calculamos la media de la popularidad para cada artista de manera individual, lo que ofreció una visión detallada de cómo cada artista impacta la popularidad de sus canciones sin considerar la interacción con otros artistas. El segundo modelo, al calcular la media de todos los artistas de forma conjunta, ofrece una visión generalizada al considerar la interacción de la popularidad entre todos los artistas, sin embargo, perdimos la distinción de la influencia de cada artista en particular.
 
 En contraste, el modelo jerárquico adopta una perspectiva más compleja, pues considera tanto la variabilidad entre artistas como la media general de popularidad. Este enfoque nos permitió capturar tanto la influencia individual de cada artista como la variabilidad global entre ellos, ofreciéndonos una comprensión más completa del fenómeno.
 
@@ -797,19 +797,11 @@ Finalmente, el modelo jerárquico incluyendo la valencia nos permitió considera
 
 Así, aunque los modelos planos simplifican el análisis al centrarse exclusivamente en el efecto del artista, el enfoque jerárquico proporcionó una visión más completa al permitir la evaluación de múltiples niveles de influencia. Sin embargo, únicamente incluimos la popularidad dada, las popularidades generadas individuales y colectivas de los artistas y la valencia, por lo que consideramos que la exclusión de otras variables predictoras pudo haber limitado la comprensión total de la popularidad de las canciones en Spotify. Por lo tanto, en futuros análisis consideraremos la inclusión de más variables predictoras para obtener una imagen más precisa y completa del problema.
 
-Si bien logramos ver una mejora considerable cuando pasamos del modelo que considera una misma popularidad media para los artistas, al modelo que considera una componente de popularidad del artista y una de la canción (homogéneo y heterogéneo, respectivamente). En el siguiente paso, del modelo heterogéneo al jerárquico, la mejoría no es tan apreciable debido a que tenemos muy pocas canciones por artista (1 o dos en promedio), por lo que el modelo jerárquico no tiene mucha información con la cual mejorar su predicción.
-
 Finalmente, el modelo jerárquico incluyendo la valencia nos permitió considerar esta variable cómo explicativa de la popularidad de una canción. Esto es relevante ya que consideramos, como se puede ver en el DAG, que la valencia influye en la popularidad de una canción. Este efecto se suma al de la popularidad individual del artista que a su vez impacta la popularidad promedio y determinan la popularidad de una canción.
-
-Abajo en las gráficas se pueden apreciar estos resultados:
-
-![Modelo homogéneo](./Sara/Rplot04.png) ![Modelo heterogéneo](./Sara/Rplot05.png) ![Modelo Jerárquico](./Sara/Rplot06.png)
 
 ## Conclusiones
 
 En conclusión, aunque los modelos planos simplifican el análisis al centrarse exclusivamente en el efecto del artista, el enfoque jerárquico proporcionó una visión más completa al permitir la evaluación de múltiples niveles de influencia. Sin embargo, únicamente incluimos la popularidad dada, las popularidades generadas individuales y colectivas de los artistas y la valencia, por lo que consideramos que la exclusión de otras variables predictoras pudo haber limitado la comprensión total de la popularidad de las canciones en Spotify. Por lo tanto, en futuros análisis consideraremos la inclusión de más variables predictoras para obtener una imagen más precisa y completa del problema.
-
-Si bien logramos ver una mejora considerable cuando pasamos del modelo que considera una misma popularidad media para los artistas, al modelo que considera una componente de popularidad del artista y una de la canción (homogéneo y heterogéneo, respectivamente). En el siguiente paso, del modelo heterogéneo al jerárquico, la mejoría no es tan apreciable debido a que tenemos muy pocas canciones por artista (1 o dos en promedio), por lo que el modelo jerárquico no tiene mucha información con la cual mejorar su predicción.
 
 ## Fuentes
 
@@ -821,3 +813,7 @@ Si bien logramos ver una mejora considerable cuando pasamos del modelo que consi
 **Anexo 1: Limpieza, Adecuación y Exploración de la Base de Datos de Spotify**
 
 El Anexo 1 incluye información detallada sobre la exploración inicial de la base de datos de canciones de Spotify, así como los procedimientos de limpieza y adecuación de los datos. Se presenta un análisis exhaustivo de la estructura y calidad de los datos, identificando y abordando posibles errores, valores atípicos y datos faltantes. Además, se describen las transformaciones realizadas para preparar los datos para su posterior análisis.
+
+**Anexo 2: Modelos en `cmdstanr`**
+
+El Anexo 2 incluye otros modelos donde se compara la popularidad promedio de canciones para un mismo artista.
