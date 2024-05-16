@@ -212,7 +212,7 @@ Proponemos como distribuciones iniciales las siguientes:
 
     En este caso, consideramos la popularidad como el resultado de un proceso de "éxito", es decir, la canción es escuchada o marcada como favorita por un usuario hasta que se alcanza un número fijo de "éxitos" ( cierto nivel de popularidad).
 
-    * popularidad ~ N($\mu$,$\phi$)
+    * popularidad ~ NegBin($\mu$,$\phi$), donde mu representa el número de éxitos y phi la probabilidad de exito
   
   * Duración:
   
@@ -240,7 +240,7 @@ Proponemos como distribuciones iniciales las siguientes:
 
   * Genero:
 
-    El genero es una variable entera, por lo que la modelaremos usando una distribución Multinomial.
+    El genero es una variable entera categórica, por lo que la modelaremos usando una distribución Multinomial.
 
     * genero ~ Multinomial(n,p)
 

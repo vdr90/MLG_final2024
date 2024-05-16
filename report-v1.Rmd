@@ -76,7 +76,10 @@ $y_i = \beta * x_i + \sigma_i​$
 
 Donde:
 
-$y_i$​ es la popularidad de la observación i. $x_i$​ representa una variable predictora (por ejemplo, duration) para la observación i. $\beta$​ representa el coeficiente del modelo. $\sigma_i$​ es el error aleatorio asociado con la observación i, que asumiremos normalmente distribuido con media cero y varianza constante.
+* $y_i$​ es la popularidad de la observación i. 
+* $x_i$​ representa una variable predictora (por ejemplo, duration) para la observación i. 
+* $\beta$​ representa el coeficiente del modelo. 
+* $\sigma_i$​ es el error aleatorio asociado con la observación i, que asumiremos normalmente distribuido con media cero y varianza constante.
 
 Para nuestro ejercicio requerimos 5 betas para cada una de las variables predictoras que usaremos.
 
@@ -170,7 +173,7 @@ stan_plot(
 
 ## 2) Modelo lineal con priors informativas
 
-Modelamos la popularidad con base en las siguientes características:
+En nuestro modelo anterior, las prioris eran poco o nulamente informativas por lo que integraremos a dicho modelo prioris informativas que reflejen nuestro conocimiento de las variables:
 
 -   ¿Cuánto dura la canción?: duration_ms
 -   ¿Es explicita?: explicit
@@ -186,7 +189,7 @@ Proponemos como distribuciones iniciales las siguientes:
 
     En este caso, consideramos la popularidad como el resultado de un proceso de "éxito", es decir, la canción es escuchada o marcada como favorita por un usuario hasta que se alcanza un número fijo de "éxitos" (cierto nivel de popularidad).
 
-    $$popularidad \sim N(\mu,\phi)$$
+    $$popularidad \sim NegBIn(\mu,\phi)$$
 
 -   Duración:
 
@@ -214,7 +217,7 @@ Proponemos como distribuciones iniciales las siguientes:
 
 -   Género:
 
-    El género es una variable entera, por lo que la modelaremos usando una distribución Multinomial.
+    El género es una variable entera categórica, por lo que la modelaremos usando una distribución Multinomial.
 
     $$género \sim Multinomial(n,p)$$
 
@@ -547,7 +550,7 @@ par(mar = c(5, 4, 4, 2) + 0.1)
 
 ```
 
-En este caso, podemos observar que la mayoría de las estimaciones se acercan al valor real o, por lo menos, están dentro del intervalo de credibilidad. Por lo tanto, modelado de esta manera se obtuvo una mejoría relativa al modelo anterior.
+En este caso, podemos observar que la mayoría de las estimaciones se acercan al valor real o, por lo menos, están dentro del intervalo de credibilidad. Por lo tanto, modelando de esta manera se obtuvo una mejora relativa al modelo anterior.
 
 ## 5) Modelo jerárquico
 
@@ -811,7 +814,7 @@ Si bien logramos ver una mejora considerable cuando pasamos del modelo que consi
 ## Fuentes
 
 -   Johnson, A. A., Ott, M. Q., & Dogucu, M. (2022). Bayes rules! an introduction to applied Bayesian modeling. CRC Press.
--   Kaggle. (2021). Spotify Tracks Dataset \[Archivo de datos CSV\]. Recuperado de https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset?select=dataset.csv
+-   Kaggle. (2021). Spotify Tracks Dataset [Archivo de datos CSV]. Recuperado de https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset?select=dataset.csv
 
 ## Anexos
 
