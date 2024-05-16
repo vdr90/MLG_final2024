@@ -10,6 +10,8 @@ output:
     gallery: false
     highlight: tango
 ---
+![ ](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAW0AAACKCAMAAABW6eueAAAAbFBMVEX///8AaFMAXkYAYUoAY0x4opcAZlCcu7P7/v0AWT/C0c2Vtay7zMcecV65z8qNrKODqqBzm482eWfe6efQ39sAVzwrdmTj7OqGq6EObVlpmIzJ2tZMiHnx9vVCg3Pq8fBWjH6lwLivx8FjlYgXsZC1AAADtUlEQVR4nO3dbVfaMBiAYUhLoKBOBHlVVPj//3FnZwpNeZ42aRO2Q+/7q6Ev1xxjTVMGAyIiIiIiIiIiIiIiIiIi6kVFJjf5/vlYG9Cx16fvHSxe229kNVoIp7TerPIsy02RpO1u3147G0pZe9Y24oDOmemPdtF+IzYvdldn9FxkNt5xSvt8e4+rPbxoKwO6dtHu9seZrSbuCR0S/XqUyu1HT7WH+ZtzPqdEx+tkt33VHppj6XT2Hd6XQvb5q6/adlU6nUPKt+xSpq/aw2J9Ppv39G/afzPtPpjcgbZ5Op/N/lba2bi32g/ns5neTHuGNtpKaJdCuz600VZDuxTa9aGNthrapdCuD+170G6aKVOPJ/ZMmXp1z0vbuhvLuw1Lpb0cN6RsYNvwstnPjOL7rGkP371pkj7a5uBubCQ72k932EnbXiLtxuTL9/ax1dHUpk2Remhnm8q2nuSBeXWWQBn3r7Qnt9PWpgqata+Pxld7sJP/EvRAeyYfbLN2Pqpuylv7QR7YA23l3wgP7efqpry1lS2iPUA7ZmijHRLaaMuhjXZIaKMth/Yttb/QbqW9HO8Oj8Ft5WNFu057MhsWWW7Dkw8V7TrtY27i3vaLtq59in4/O9qq9iH+PCfamnYCbLQ17ecUc+Joy9pd1kbqoS1rp1mDhLaovUyzvA5tUVu5iaNraIva2zSLGdGWtFMtZkRb0l6ifUNt7S6vrqEtaae63RdttMXQdgai3RTawdo2b075uI52oLY129O8sdb3b6PtHPvL0mdfzLnH0M5OfvvifpII2vbguS+0I2gbr7eRAdoxtJ1nntWGdnft6yVIWmhH0L6i0EIb7ZDQdgaifQ5ttENC2xmI9jm00Q7pP9Ce+x4r2hH+5+79WPyNfK8V2kFXpabXY8VWzCZEuOK69duZ9ihztINmE/IXny+QWbOmLM5MWW6/mrwnX+oj6tAOnXPPzOqltkx/Mdrh95O0W5n6J7S5e0cMbWcg2k2hjbYY2s7A+9FmJQirnNyB96OtXVXqGtqitvKM4a6hLWqvWXktn0Gapwqckiy9RlvW/kjzxIzL95iiXe6Ygttcrtai7TSK/ykwL61sQNttF5279CXMaFcbF3E/dRfl70NGu9riUMT7aGId7P9e28gLQTNv7Vf59XU3iew/jck8VqM2lhWVpX/TQhxnrrWVgdfaysB22iMlb+2d/Pr6280m+/FG23NA40Vlu8u5PPBYPYCuA+dP1YFERERERERERERERERERHSf/QY8SKLDIfSrhwAAAABJRU5ErkJggg==)
+
 ```{r message=FALSE, results="hide"}
 library(rstan)
 library(ggplot2)
@@ -53,11 +55,11 @@ Para este proyecto usaremos la base de datos “Spotify Tracks Dataset” de Kag
 datos <- read.csv("datos/datos.csv") 
 datos <- as.data.frame(datos)
 selected_datos_small <- read.csv("datos/datos_small.csv") 
-selected_datos <- read.csv("datos/selected_datos.csv") 
+selected_datos <- read.csv("datos/selected_datos_75.csv") 
 glimpse(datos)
 ```
 
-Tenemos 114 mil registros de canciones y 21 características que los representan, entre las cuales destaca el identificador de la canción, el artista, el álbum en el que fue publicada, la popularidad, su duración, entre otras características. Debido al desarrollo del modelado, vamos a ocupar sólo una muestra de 5,000 canciones. Nos enfocaremos en el análisis y modelado de la popularidad, sin embargo, en el anexo 1 de este trabajo se puede consultar la limpieza y adecuación de los datos utilizados.
+Tenemos 114 mil registros de canciones y 21 características que los representan, entre las cuales destaca el identificador de la canción, el artista, el álbum en el que fue publicada, la popularidad, su duración, entre otras características. Debido al desarrollo del modelado, vamos a ocupar sólo una muestra de 75,000 canciones. Nos enfocaremos en el análisis y modelado de la popularidad, sin embargo, en el anexo 1 de este trabajo se puede consultar la limpieza y adecuación de los datos utilizados.
 
 ```{r}
 datos <- read.csv("datos/muestra.csv")
