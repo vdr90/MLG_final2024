@@ -1,0 +1,820 @@
+---
+title: "Análisis de popularidad de canciones en el servicio de streaming Spotify"
+date: "`r Sys.Date()`"
+author: Equipo B
+output:
+  rmdformats::readthedown:
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: false
+    highlight: tango
+---
+```{r message=FALSE, results="hide"}
+library(rstan)
+library(ggplot2)
+library(gridExtra)
+library(tidyverse)
+library(cmdstanr)
+library(rsample)
+library(DiagrammeR)
+library(kableExtra)
+```
+
+## Introducción
+
+De acuerdo con Wikipedia, en la plataforma de Spotify se tiene acceso a más de 100 millones de canciones. Algunas canciones son más populares que otras. Definimos a la variable $Y$ como un rating de popularidad con $Y ∈ [0, 100]$. En general, entre más reproducciones recientes tenga una una canción, su rating de popularidad será mayor.
+
+Sabemos que la popularidad de una canción, no siempre es reflejo de su calidad, popularidad a largo plazo, o popularidad a fuera de la audiencia de Spotify. Además del artista, hay otras características que hacen popular a una canción, como la “valencia”, que define qué tan alegre suena una pieza.
+
+Para el proyecto nos enfocaremos en entender:
+
+-   Algunas de las variables que afectan la popularidad de las caciones y en qué grado.
+-   ¿Cuál es la popularidad típica de una canción en Spotify?
+-   ¿Hasta dónde influye el artista en la popularidad de la canción?
+-   Para un sólo artista, ¿cómo varía la popularidad de sus canciones?
+-   ¿Cómo influye la valencia en la popularidad de una canción?
+
+Métodos:
+
+Para nuestro proyecto haremos uso de distintos tipos de modelos:
+
+1.  Para el objetivo inicial, generaremos un modelo lineal generalizado con priors poco informativas haciendo uso de las variables popularity, duration, explicit, danceability, tempo y genre. Esto nos permitirá conocer los aspectos más relevantes y el impacto de dichas variables en la popularidad de las canciones.
+2.  Compararemos el modelo anterior con un modelo con priors informativas.
+3.  Modelo con parámetros homogéneos: Modelar la popularidad de las canciones sin tomar en cuenta el artista.
+4.  Modelo con parámetros heterogéneos: Modelar la popularidad de las canciones tomando en cuenta a los artistas que las interpretan.
+5.  Modelo jerárquico: Una alternativa intermedia donde permitimos que la distribución inicial sobre la popularidad pueda adaptarse a los datos. Y comparar sus distribuciones predictivas con los datos observados, para ver cuál modela mejor y porqué.
+6.  Modelo jerárquico con DAG: Haremos un DAG para agregar la variable de valencia al modelo jerárquico.
+
+## Datos
+
+Para este proyecto usaremos la base de datos “Spotify Tracks Dataset” de Kaggle, que incluye más de 125 géneros musicales y más de 100 mil canciones. Observamos la estructura de los datos:
+```{r}
+datos <- read.csv("datos/datos.csv") 
+datos <- as.data.frame(datos)
+selected_datos_small <- read.csv("datos/datos_small.csv") 
+selected_datos <- read.csv("datos/selected_datos.csv") 
+glimpse(datos)
+```
+
+Tenemos 114 mil registros de canciones y 21 características que los representan, entre las cuales destaca el identificador de la canción, el artista, el álbum en el que fue publicada, la popularidad, su duración, entre otras características. Sin embargo, vamos a ocupar sólo una muestra de 5,000 canciones debido al desarrollo del modelado. Nos enfocaremos en el análisis y modelado de la popularidad, sin embargo, en el anexo 1 de este trabajo se muestra la limpieza y adecuación de los datos utilizados.
+
+```{r}
+datos <- read.csv("datos/muestra.csv")
+print(summary(datos))
+```
+
+## Modelos
+
+## 1) Modelo lineal generalizado
+
+Generamos un modelo lineal con priors poco informativas.
+
+El modelo lineal simple lo expresamos como:
+
+$y_i = \beta * x_i + \sigma_i​$
+
+Donde:
+
+$y_i$​ es la popularidad de la observación i. $x_i$​ representa una variable predictora (por ejemplo, duration) para la observación i. $\beta$​ representa el coeficiente del modelo. $\sigma_i$​ es el error aleatorio asociado con la observación i, que asumiremos normalmente distribuido con media cero y varianza constante.
+
+Para nuestro ejercicio requerimos 5 betas para cada una de las variables predictoras que usaremos.
+
+```{r message= FALSE, results="hide"}
+
+stan_code_lineal <- "
+data {
+  int<lower=0> N;  
+  int<lower=0, upper=100> popularity[N];    
+  real<lower=0> duration[N];      
+  int<lower=0, upper=1> explicito[N];
+  real<lower=0, upper=1> dance[N];  
+  real<lower=0, upper=244> tempo[N];     
+  int<lower=1, upper=114> genre[N];     
+}
+parameters {
+  real mu_popularity; 
+  real<lower=0> sigma_popularity;                            
+  real beta_duration;
+  real beta_explicito;
+  real beta_dance;
+  real beta_tempo;
+  real beta_genre;                             
+}
+model {
+  // Priors
+  mu_popularity ~ normal(0,1);        
+  sigma_popularity ~ normal(0,1);         
+  beta_duration ~ normal(0,1);        
+  beta_explicito ~ normal(0,1);        
+  beta_dance ~ normal(0,1);   
+  beta_tempo ~ normal(0,1);        
+  beta_genre ~ normal(0,1);        
+     
+
+  // Likelihood
+  for (i in 1:N) {
+    popularity[i] ~ normal(mu_popularity + 
+                            beta_duration * duration[i] +
+                            beta_explicito * explicito[i] +
+                            beta_dance * dance[i] +
+                            beta_tempo * tempo[i] +
+                            beta_genre * genre[i] 
+                            , sigma_popularity); 
+  }
+}
+"
+
+# Compilar el modelo
+stan_model_lineal <- stan_model(model_code = stan_code_lineal)
+
+# Ajustar el modelo a los datos
+fit_lineal <- sampling(stan_model_lineal, 
+                       data = list(N = nrow(selected_datos_small), 
+                                   popularity = selected_datos_small$popularity,
+                                   duration = selected_datos_small$duration_ms,
+                                   explicito = selected_datos_small$explicit,
+                                   dance = selected_datos_small$danceability,
+                                   tempo = selected_datos_small$tempo,
+                                   genre = selected_datos_small$genre_numeric), 
+                       iter=10000, warmup=3000, seed=123)
+
+```
+
+Observamos los resultados
+```{r}
+print(fit_lineal)
+```
+
+Con base en lo anterior:
+
+-   La duración no parece tener una influencia significativa en la popularidad, ya que su coeficiente es cercano a cero.
+-   La explicitividad tiene una influencia positiva significativa en la popularidad, con un coeficiente de 1.01, lo que sugiere que las canciones más explícitas tienden a ser más populares.
+-   La danzabilidad también tiene una influencia positiva significativa en la popularidad, con un coeficiente de 0.55, lo que indica que las canciones más adecuadas para bailar tienden a ser más populares.
+-   El tempo también tiene una influencia positiva en la popularidad, aunque más moderada que la explicitividad y la danzabilidad, con un coeficiente de 0.23.
+-   El género parece tener una influencia ligeramente negativa en la popularidad, aunque muy pequeña, con un coeficiente de -0.02, lo que sugiere que ciertos géneros podrían ser ligeramente menos populares en promedio en comparación con otros.
+
+En resumen, la explicitividad, la danzabilidad y el tempo parecen ser los principales impulsores de la popularidad de una canción, mientras que la duración y el género tienen influencias menos significativas.
+
+Observamos los intervalos de credibilidad
+
+```{r}
+extract_lineal <- rstan::extract(fit_lineal)
+
+stan_plot(
+  fit_lineal, 
+  pars = c("mu_popularity", "beta_duration", "beta_explicito", "beta_dance", "beta_tempo", "beta_genre"), 
+  prob = 0.95
+)
+```
+
+## 2) Modelo lineal con priors informativas
+
+Modelamos la popularidad con base en las siguientes características:
+
+-   ¿Cuánto dura la canción?: duration_ms
+-   ¿Es explicita?: explicit
+-   ¿Qué tan bailable es?: danceability
+-   Tempo: tempo
+-   Género: track_genre
+
+Proponemos como distribuciones iniciales las siguientes:
+
+-   Popularidad:
+
+    Es nuestra variable objetivo y debido a que la popularidad es un valor discreto entre 0 y 100, elegimos una distribución Binomial Negativa la cual permitirá modelar la sobredispersión, pues esperamos que la popularidad tenga una amplia variabilidad.
+
+    En este caso, consideramos la popularidad como el resultado de un proceso de "éxito", es decir, la canción es escuchada o marcada como favorita por un usuario hasta que se alcanza un número fijo de "éxitos" (cierto nivel de popularidad).
+
+    $$popularidad \sim N(\mu,\phi)$$
+
+-   Duración:
+
+    Sabemos que la duración de las canciones debe ser mayor a cero y tiene una media aproximada de 3 minutos, por lo que usaremos una distribución exponencial.
+
+    $$duración \sim Exp(\lambda) ; \lambda = 1/180000$$ (se encuentra en milisegundos)
+
+-   Explícita:
+
+    La variable "explícita" es una variable que tomará los valores 0 y 1. Usaremos entonces una distribución Beta para modelarla.
+
+    $$explicita \sim Beta(\rho)$$
+
+-   Danzabilidad:
+
+    Ya que los valores que toma esta variable se encuentran entre 0 y 1, utilizaremos una distribución Beta.
+
+    $$danzabilidad \sim Beta(\alpha,\beta)$$
+
+-   Tempo:
+
+    Variable continua entre 0 y 244. Utilizaremos una distribución normal truncada.
+
+    $$tempo \sim N+(\mu,\sigma)$$
+
+-   Género:
+
+    El género es una variable entera, por lo que la modelaremos usando una distribución Multinomial.
+
+    $$género \sim Multinomial(n,p)$$
+
+Utilizaremos un modelo lineal generalizado (GLM), donde la popularidad sea una función lineal de las demás variables, teniendo en cuenta la naturaleza discreta de la popularidad (valores enteros entre 0 y 100).
+
+```{r message= FALSE, results="hide"}
+
+  stan_code <- "
+  data {
+    int<lower=0> N;               
+    int<lower=0, upper=100> popularity[N];  
+    real<lower=0> duration_ms[N];      
+    int<lower=0, upper=1> explicito[N];
+    real<lower=0, upper=1> danceability[N];  
+    real<lower=0, upper=244> tempo[N];     
+    real<lower=1, upper=114> genre[N];        
+  }
+
+  parameters {
+    real phi_popularity;
+    real<lower=0> p_duration;        
+    real<lower=0, upper=1> p_explicit;  
+    real<lower=0, upper=1> p_dance; 
+    real<lower=0> mu_tempo;             
+    real<lower=0> sigma_tempo;  
+    real<lower=0> mu_genre;             
+    real<lower=0> sigma_genre;        
+    real<lower=0> p_tempo;                
+    real<lower=0> p_genre;              
+
+  }
+
+  model {
+
+    // Priors
+    phi_popularity ~ normal(0, 1);
+    p_duration ~ exponential(180000);  
+    p_explicit ~ beta(2,2);                
+    p_dance ~ beta(1, 1);           
+    mu_tempo ~ normal(120, 30);               
+    sigma_tempo ~ cauchy(0, 5);      
+    mu_genre ~ normal(120, 30);               
+    sigma_genre ~ cauchy(0, 5);  
+    p_tempo ~ normal(mu_tempo, sigma_tempo);
+    p_genre ~ normal(mu_genre, sigma_genre);
+
+    // Likelihood
+    for (i in 1:N) {
+      real mu_popularity;
+      
+      mu_popularity = p_duration * duration_ms[i] + 
+                      p_explicit * explicito[i] +
+                      p_dance * danceability[i] +
+                      p_tempo * tempo[i] +
+                      p_genre * genre[i];
+      
+      popularity[i] ~ neg_binomial_2(mu_popularity, phi_popularity); // Distribución binomial negativa para popularidad
+    }
+  }
+  "
+
+# Compilar el modelo
+stan_model <- stan_model(model_code = stan_code)
+
+stan_data <- list(
+  N = nrow(selected_datos_small),
+  popularity = selected_datos_small$popularity,
+  duration_ms = selected_datos_small$duration_ms,
+  explicito = selected_datos_small$explicit,
+  danceability = selected_datos_small$danceability,
+  tempo = selected_datos_small$tempo,
+  genre = selected_datos_small$genre_numeric
+)
+
+# Ajustar el modelo a los datos
+fit <- sampling(stan_model, data = stan_data, chains = 4, iter = 50000, warmup = 5000, seed=123)
+```
+
+Observamos los resultados
+
+```{r}
+print(fit)
+```
+
+Podemos deducir que la explicitividad, la danzabilidad, el tempo y el género parecen tener influencias significativas en la popularidad de una canción, mientras que la duración parece tener una influencia insignificante. Específicamente, las canciones más explícitas, adecuadas para bailar y con ciertos tempos y géneros tienden a ser más populares en promedio.
+
+Observamos intervalos de credibilidad
+
+```{r}
+stan_plot(
+  fit, 
+  pars = c("phi_popularity", "p_duration", "p_explicit", "p_dance", "mu_tempo", "mu_genre", "p_tempo", "p_genre"), 
+  prob = 0.95
+)
+```
+
+## 3) Modelo de popularidad individual
+
+El siguente modelo considerará solo la popularidad del artista como predictor de la popularidad de la canción.
+
+```{r message= FALSE, results="hide"}
+
+individual_code <-"
+data {
+  int<lower=0> N;                
+  vector[N] popularity_artist;   
+  vector[N] popularity;     
+}
+
+parameters {
+  real intercept;                 
+  real beta_artist;               
+  real<lower=0> sigma;            
+}
+
+model {
+  // Priors
+  intercept ~ normal(0, 1);      
+  beta_artist ~ normal(0, 1);     
+  sigma ~ normal(0, 1);           
+
+  // Likelihood
+  for (i in 1:N) {
+    // Modelo lineal
+    popularity[i] ~ normal(intercept + beta_artist * popularity_artist[i], sigma);
+  }
+}
+"
+
+
+# Compilar el modelo
+individual_model <- stan_model(model_code = individual_code)
+
+stan_indiv_data <- list(
+  N = nrow(selected_datos),
+  popularity = selected_datos$popularity,
+  popularity_artist = selected_datos$popularity_artist
+)
+
+# Ajustar el modelo a los datos
+individual_fit <- sampling(individual_model, data = stan_indiv_data, chains = 4, iter = 10000, warmup = 500, seed=123)
+```
+
+Observamos los resultados
+
+```{r}
+print(individual_fit)
+```
+
+En resumen, el artista sí logra influir en la popularidad de una canción.
+
+Observamos los intervalos de credibilidad
+
+```{r}
+stan_plot(
+  individual_fit, 
+  pars = c("intercept", "beta_artist"), 
+  prob = 0.95
+)
+```
+
+Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.
+
+En el siguiente gráfico puede observarse un intervalo del 95% de credibilidad para las 10 canciones, así como la media de las simulaciones y el valor real de la popularidad para la canción.
+
+```{r}
+avg_popularity_artists <- mean(selected_datos$popularity_artist)
+
+n_songs = 20
+# Calculamos las predicciones con los coeficientes obtenidos
+comp_simul <- list()
+
+for (i in 1:n_songs) {
+  mu_pred <- mean(rstan::extract(individual_fit)$intercept) + 
+             mean(rstan::extract(individual_fit)$beta_artist) * avg_popularity_artists
+             
+  pred_simuladas <- rnorm(10000, mean = mu_pred, sd = mean(rstan::extract(individual_fit)$sigma))
+
+  comp_simul[[i]] <- list(real_popularity = datos$popularity[i], simulated_popularity = pred_simuladas)
+}
+
+# Establecer márgenes más pequeños
+par(mar = c(2, 2, 2, 2))
+
+par(mfrow=c(5, 4))  
+
+for (i in 1:length(comp_simul)) {
+
+  real_popularity <- comp_simul[[i]]$real_popularity
+  simulated_popularity <- comp_simul[[i]]$simulated_popularity
+  
+  # intervalo de confianza del 95%
+  ci <- quantile(simulated_popularity, c(0.025, 0.975))
+  
+
+  plot(1, xlim=c(0, 2), ylim=c(0, max(c(real_popularity, ci))), type="n", xlab="", ylab="Popularidad")
+  lines(rep(1, 2), ci, col="darkcyan", lwd=2)  
+  points(1, abs(mean(simulated_popularity)), col="brown", pch=19)  
+  points(1, real_popularity, col="orange", pch=19)  
+  text(1.05, real_popularity, paste("Real:", real_popularity), pos=4,offset=1)  # Etiqueta valor real
+  text(1.05, mean(simulated_popularity), paste("Media:", round(abs(mean(simulated_popularity)), 2)), pos=4,offset=-6)  # Etiqueta  media
+  title(paste("Canción", i))  # Título
+}
+
+par(mfrow=c(1, 1)) 
+
+par(mar = c(5, 4, 4, 2) + 0.1)
+
+
+```
+
+Observamos que en la mayoría de las canciones que estamos ejemplificando la estimación no está cerca del valor real ni dentro del intervalo de credibilidad.
+
+## 4) Modelo popularidad entre artistas
+
+```{r message= FALSE, results="hide"}
+
+general_stan_code <-" 
+data {
+  int<lower=0> N;                // Número de observaciones
+  real popularity_avg_artist;    // Popularidad promedio entre artistas
+  vector[N] popularity;          // Popularidad de la canción
+}
+
+parameters {
+  real intercept;                // Intercepto
+  real beta_artist;              // Coeficiente de la popularidad entre artistas
+  real<lower=0> sigma;           // Desviación estándar de los errores
+}
+
+model {
+  // Priors
+  intercept ~ normal(0, 1);      // Prior para el intercepto
+  beta_artist ~ normal(0, 1);     // Prior para el coeficiente de la popularidad entre artistas
+  sigma ~ normal(0, 1);           // Prior para la desviación estándar
+
+  // Likelihood
+  for (i in 1:N) {
+    // Modelo lineal
+    popularity[i] ~ normal(intercept + beta_artist * popularity_avg_artist, sigma);
+  }
+}
+
+//generated quantities {
+//  vector[N] simulated_popularity;  // Simulaciones de la popularidad de las canciones
+
+  // Generar simulaciones
+//  for (i in 1:N) {
+//    simulated_popularity[i] = normal_rng(intercept + beta_artist * popularity_avg_artist, sigma);
+//  }
+//}
+"
+
+
+# Compilar el modelo
+general_model <- stan_model(model_code = general_stan_code)
+
+avg_popularity_artists <- mean(selected_datos$popularity_artist)
+
+stan_general_data <- list(
+  N = nrow(selected_datos),
+  popularity = selected_datos$popularity,
+  popularity_avg_artist = avg_popularity_artists
+)
+
+# Ajustar el modelo a los datos
+general_fit <- sampling(general_model, data = stan_general_data, chains = 4, iter = 10000, warmup = 500, seed=123)
+```
+
+Observamos los resultados
+
+```{r}
+print(general_fit)
+```
+
+Observamos los intervalos de credibilidad
+
+```{r}
+stan_plot(
+  general_fit, 
+  pars = c("intercept", "beta_artist"), 
+  prob = 0.95
+)
+```
+
+Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.
+
+En el siguiente gráfico puede observarse un intervalo del 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.
+
+```{r}
+
+n_songs = 20
+comp_simul <- list()
+
+for (i in 1:n_songs) {
+  mu_pred <- mean(rstan::extract(general_fit)$intercept) + 
+             mean(rstan::extract(general_fit)$beta_artist) * avg_popularity_artists
+             
+  pred_simuladas <- rnorm(10000, mean = mu_pred, sd = mean(rstan::extract(general_fit)$sigma))
+
+  comp_simul[[i]] <- list(real_popularity = datos$popularity[i], simulated_popularity = pred_simuladas)
+}
+
+par(mar = c(2, 2, 2, 2))
+
+
+par(mfrow=c(5, 4))  
+
+for (i in 1:length(comp_simul)) {
+
+  real_popularity <- comp_simul[[i]]$real_popularity
+  simulated_popularity <- comp_simul[[i]]$simulated_popularity
+  
+  # intervalo de confianza del 95%
+  ci <- quantile(simulated_popularity, c(0.025, 0.975))
+  
+
+  plot(1, xlim=c(0, 2), ylim=c(0, max(c(real_popularity, ci))), type="n", xlab="", ylab="Popularidad")
+  lines(rep(1, 2), ci, col="darkcyan", lwd=2)  
+  points(1, abs(mean(simulated_popularity)), col="brown", pch=19)  
+  points(1, real_popularity, col="orange", pch=19)  
+  text(1.05, real_popularity, paste("Real:", real_popularity), pos=4,offset=1)  # Etiqueta valor real
+  text(1.05, mean(simulated_popularity), paste("Media:", round(abs(mean(simulated_popularity)), 2)), pos=4,offset=-6)  # Etiqueta  media
+  title(paste("Canción", i))  # Título
+}
+
+par(mfrow=c(1, 1)) 
+
+par(mar = c(5, 4, 4, 2) + 0.1)
+
+```
+
+En este caso, podemos observar que la mayoría de las estimaciones se acercan al valor real o, por lo menos, están dentro del intervalo de credibilidad. Por lo tanto, modelado de esta manera se obtuvo una mejoría relativa al modelo anterior.
+
+## 5) Modelo jerárquico
+
+```{r message= FALSE, results="hide"}
+
+jerarquico_code <- "
+data {
+  int<lower=0> N;                     // Número de observaciones
+  vector[N] popularity_artist;        // Popularidad individual del artista
+  real popularity_avg_artist;         // Popularidad promedio entre artistas
+  vector[N] popularity;               // Popularidad de la canción
+}
+
+parameters {
+  real intercept;                     // Intercepto
+  real beta_individual_artist;        // Coeficiente de la popularidad individual del artista
+  real beta_avg_artist;               // Coeficiente de la popularidad promedio entre artistas
+  real<lower=0> sigma;                // Desviación estándar de los errores
+}
+
+model {
+  // Priors
+  intercept ~ normal(0, 1);          // Prior para el intercepto
+  beta_individual_artist ~ normal(0, 1);  // Prior para el coeficiente de la popularidad individual del artista
+  beta_avg_artist ~ normal(0, 1);     // Prior para el coeficiente de la popularidad promedio entre artistas
+  sigma ~ normal(0, 1);               // Prior para la desviación estándar
+
+  // Likelihood
+  for (i in 1:N) {
+    // Modelo lineal jerárquico
+    popularity[i] ~ normal(intercept + beta_individual_artist * popularity_artist[i] + beta_avg_artist * popularity_avg_artist, sigma);
+  }
+}
+"
+
+# Compilar el modelo
+jerarquico_model <- stan_model(model_code = jerarquico_code)
+
+stan_jerarquico_data <- list(
+  N = nrow(selected_datos),
+  popularity = selected_datos$popularity,
+  popularity_avg_artist = avg_popularity_artists,
+  popularity_artist = selected_datos$popularity_artist
+)
+
+# Ajustar el modelo a los datos
+jerarquico_fit <- sampling(jerarquico_model, data = stan_jerarquico_data, chains = 4, iter = 10000, warmup = 500, seed=123)
+```
+
+Observamos los resultados
+
+```{r}
+print(jerarquico_fit)
+```
+
+Por lo tanto, la influencia de la popularidad del artista individual parece ser el factor más relevante en la popularidad de una canción, mientras que la influencia del promedio de popularidad de los artistas no parece ser significativa.
+
+Observamos los intervalos de credibilidad
+
+```{r}
+stan_plot(
+  jerarquico_fit, 
+  pars = c("intercept", "beta_individual_artist", "beta_avg_artist"), 
+  prob = 0.95
+)
+```
+
+Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.
+
+En el siguiente gráfico puede observarse un intervalo del 95% de credibilidad para las 10 canciones así como la media de las simulaciones y el valor real de la popularidad para la canción.
+
+```{r}
+
+n_songs = 20
+# Calculamos las predicciones con los coeficientes obtenidos
+comp_simul <- list()
+
+for (i in 1:n_songs) {
+  mu_pred <- mean(rstan::extract(jerarquico_fit)$intercept) + 
+             mean(rstan::extract(jerarquico_fit)$beta_individual_artist) * datos$popularity_artist[i] +
+             mean(rstan::extract(jerarquico_fit)$beta_avg_artist) * avg_popularity_artists
+             
+  pred_simuladas <- rnorm(10000, mean = mu_pred, sd = mean(rstan::extract(jerarquico_fit)$sigma))
+
+  comp_simul[[i]] <- list(real_popularity = datos$popularity[i], simulated_popularity = pred_simuladas)
+}
+
+par(mar = c(2, 2, 2, 2))
+
+
+par(mfrow=c(5, 4))  
+
+for (i in 1:length(comp_simul)) {
+
+  real_popularity <- comp_simul[[i]]$real_popularity
+  simulated_popularity <- comp_simul[[i]]$simulated_popularity
+  
+  # intervalo de confianza del 95%
+  ci <- quantile(simulated_popularity, c(0.025, 0.975))
+  
+
+  plot(1, xlim=c(0, 2), ylim=c(0, max(c(real_popularity, ci))), type="n", xlab="", ylab="Popularidad")
+  lines(rep(1, 2), ci, col="darkcyan", lwd=2)  
+  points(1, abs(mean(simulated_popularity)), col="brown", pch=19)  
+  points(1, real_popularity, col="orange", pch=19)  
+  text(1.05, real_popularity, paste("Real:", real_popularity), pos=4,offset=1)  # Etiqueta valor real
+  text(1.05, mean(simulated_popularity), paste("Media:", round(abs(mean(simulated_popularity)), 2)), pos=4,offset=-6)  # Etiqueta  media
+  title(paste("Canción", i))  # Título
+}
+
+par(mfrow=c(1, 1)) 
+
+par(mar = c(5, 4, 4, 2) + 0.1)
+```
+
+## 6) Modelo jarárquico incluyendo la valencia con DAG
+
+Incluimos la valencia en los datos
+
+```{r message= FALSE, results="hide"}
+#Variables de interés
+full_data <- datos
+selected_datos <- datos[, c("popularity", "valence", "duration_ms","explicit","danceability","tempo","genre_numeric","popularity_artist")]
+selected_datos$explicit <- as.integer(selected_datos$explicit)
+selected_datos <- head(selected_datos,5000)
+#selected_datos_small <- head(selected_datos,50)
+
+avg_popularity_artists <- mean(selected_datos$popularity_artist)
+```
+
+Modelo incluyendo la valencia
+
+```{r message= FALSE, results="hide"}
+jer_val_code <- "
+data {
+  int<lower=0> N;                     // Número de observaciones
+  vector[N] popularity_artist;        // Popularidad individual del artista
+  real popularity_avg_artist;         // Popularidad promedio entre artistas
+  vector[N] popularity;               // Popularidad de la canción
+  vector[N] valence;                  // Valencia de la canción
+}
+
+parameters {
+  real intercept;                     // Intercepto
+  real beta_individual_artist;        // Coeficiente de la popularidad individual del artista
+  real beta_avg_artist;               // Coeficiente de la popularidad promedio entre artistas
+  real beta_valence;                  // Coeficiente de la valencia
+  real<lower=0> sigma;                // Desviación estándar de los errores
+}
+
+model {
+  // Priors
+  intercept ~ normal(0, 1);          // Prior para el intercepto
+  beta_individual_artist ~ normal(0, 1);  // Prior para el coeficiente de la popularidad individual del artista
+  beta_avg_artist ~ normal(0, 1);     // Prior para el coeficiente de la popularidad promedio entre artistas
+  beta_valence ~ normal(0, 1);        // Prior para el coeficiente de la valencia
+  sigma ~ normal(0, 1);               // Prior para la desviación estándar
+
+  // Likelihood
+  for (i in 1:N) {
+    // Modelo lineal jerárquico
+    popularity[i] ~ normal(intercept + beta_individual_artist * popularity_artist[i] + beta_avg_artist * popularity_avg_artist + beta_valence * valence[i], sigma);
+  }
+}
+"
+
+jer_val_model <- stan_model(model_code = jer_val_code)
+
+stan_jer_val_data <- list(
+  N = nrow(selected_datos),
+  popularity = selected_datos$popularity,
+  valence = selected_datos$valence,
+  popularity_avg_artist = avg_popularity_artists,
+  popularity_artist = selected_datos$popularity_artist
+)
+
+# Ajustar el modelo a los datos
+jer_val_fit <- sampling(jer_val_model, data = stan_jer_val_data, chains = 4, iter = 10000, warmup = 500)
+```
+
+Observamos los resultados
+
+```{r}
+print(jer_val_fit)
+```
+
+La influencia de la popularidad del artista individual parece ser el factor más relevante en la popularidad de una canción, mientras que la influencia del promedio de popularidad de los artistas y la valencia también son significativas, pero en menor medida.
+
+Observamos los intervalos de credibilidad
+
+```{r}
+stan_plot(
+  jer_val_fit, 
+  pars = c("intercept", "beta_individual_artist", "beta_avg_artist", "beta_valence"), 
+  prob = 0.95
+)
+```
+
+### DAG (Grafo Acíclico Dirigido, por sus siglas en inglés)
+
+\*Popularidad de la canción (popularity): La popularidad de una canción puede ser influenciada por diversos factores, entre ellos, la calidad de la música en sí misma y cómo resuena con el público objetivo.
+
+\*Popularidad individual del artista (popularity_artist): La popularidad de un artista puede influir en la percepción y el interés del público hacia sus nuevas canciones. Los seguidores de un artista pueden estar más dispuestos a escuchar y apoyar nuevas producciones.
+
+\*Popularidad promedio entre artistas (popularity_avg_artist): La popularidad promedio entre artistas podría representar el contexto musical general en el que se encuentra la canción. Por ejemplo, si la mayoría de las canciones lanzadas recientemente por otros artistas tienen una alta popularidad, esto podría aumentar las expectativas del público y afectar la percepción de la nueva canción.
+
+\*Valencia (valence): La valencia de la música, es decir, su capacidad para transmitir emociones y sensaciones auténticas, puede tener un efecto directo en cómo el público la percibe y la valora. Una música con alta valencia podría resonar más con los oyentes y aumentar su disposición a compartir y apoyar la canción.
+
+Proponemos un DAG donde las flechas indican la dirección de la causalidad, sugiriendo que la popularidad del artista y la popularidad promedio entre artistas podrían influir en la valencia de la música, que a su vez afecta la popularidad de la canción.
+
+```{r}
+grViz("
+digraph {
+  graph [ranksep = 0.2, rankdir = LR]
+  node [shape=plaintext]
+  C
+  A
+  P
+  V
+  edge [minlen = 3]
+  A -> P -> C
+  V -> C
+}
+", width = 400)
+```
+
+donde C es la popularidad de la canción, \n A es la popularidad individual del artista, \n P es la popularidad promedio entre artistas y \n V es la valencia de la canción.
+
+## Resultados
+
+-   **Análisis general de popularidad mediante Modelos Lineales Generalizados**
+
+Los tres modelos iniciales creados para analizar la popularidad de canciones en Spotify ofrecen un panorama progresivo de cómo diversos factores influyen en la percepción y aceptación de una canción por parte de los usuarios de la aplicación. El primer modelo, basado en priors no informativas, establece un punto de partida fundamental al recopilar cinco variables predictoras clave; este enfoque inicial permite comprender la relación entre estas variables y la popularidad de las canciones. En contraste, el segundo modelo introduce priors informativas que aprovechan el conocimiento previo para mejorar la precisión de las predicciones. Esta inclusión de información contextual refleja de mejor forma la realidad y las tendencias de popularidad de las canciones. Finalmente, el tercer modelo expande aún más la comprensión al agregar una variable adicional, lo que permite evaluar cómo este nuevo factor afecta la popularidad de las canciones. Este enfoque más completo revela cómo la inclusión de diferentes aspectos puede modular la percepción de una canción por parte del público.
+
+En resumen, estos modelos proporcionan una perspectiva incremental y enriquecedora para entender la dinámica detrás de la popularidad de las canciones en la plataforma de Spotify, destacando la importancia de considerar tanto los datos como el contexto para obtener resultados precisos.
+
+-   **Modelos homogéneos y jerárquico**
+
+Los dos modelos homogéneos planteados en este trabajo, proporcionan perspectivas simples pero esclarecedoras. En el primer modelo calculamos la media de la popularidad para cada artista de manera individual, lo que ofreció una visión detallada de cómo cada artista impacta la popularidad de sus canciones sin considerar la interacción con otros artistas. El segundo modelo, al calcular la media de todos los artistas de forma conjunta, ofrece una visión generalizada al considerar la interacción de la popularidad entre todos los artistas, sin embargo, perdimos la distinción de la influencia de cada artista en particular.
+
+En contraste, el modelo jerárquico adopta una perspectiva más compleja, pues considera tanto la variabilidad entre artistas como la media general de popularidad. Este enfoque nos permitió capturar tanto la influencia individual de cada artista como la variabilidad global entre ellos, ofreciéndonos una comprensión más completa del fenómeno.
+
+Finalmente, el modelo jerárquico incluyendo la valencia nos permitió considerar esta variable cómo explicativa de la popularidad de una canción. Esto es relevante ya que consideramos, como se puede ver en el DAG, que la valencia influye en la popularidad de una canción. Este efecto se suma al de la popularidad individual del artista que a su vez impacta la popularidad promedio y determinan la popularidad de una canción.
+
+Así, aunque los modelos planos simplifican el análisis al centrarse exclusivamente en el efecto del artista, el enfoque jerárquico proporcionó una visión más completa al permitir la evaluación de múltiples niveles de influencia. Sin embargo, únicamente incluimos la popularidad dada, las popularidades generadas individuales y colectivas de los artistas y la valencia, por lo que consideramos que la exclusión de otras variables predictoras pudo haber limitado la comprensión total de la popularidad de las canciones en Spotify. Por lo tanto, en futuros análisis consideraremos la inclusión de más variables predictoras para obtener una imagen más precisa y completa del problema.
+
+Si bien logramos ver una mejora considerable cuando pasamos del modelo que considera una misma popularidad media para los artistas, al modelo que considera una componente de popularidad del artista y una de la canción (homogéneo y heterogéneo, respectivamente). En el siguiente paso, del modelo heterogéneo al jerárquico, la mejoría no es tan apreciable debido a que tenemos muy pocas canciones por artista (1 o dos en promedio), por lo que el modelo jerárquico no tiene mucha información con la cual mejorar su predicción.
+
+Finalmente, el modelo jerárquico incluyendo la valencia nos permitió considerar esta variable cómo explicativa de la popularidad de una canción. Esto es relevante ya que consideramos, como se puede ver en el DAG, que la valencia influye en la popularidad de una canción. Este efecto se suma al de la popularidad individual del artista que a su vez impacta la popularidad promedio y determinan la popularidad de una canción.
+
+Abajo en las gráficas se pueden apreciar estos resultados:
+
+![Modelo homogéneo](./Sara/Rplot04.png) ![Modelo heterogéneo](./Sara/Rplot05.png) ![Modelo Jerárquico](./Sara/Rplot06.png)
+
+## Conclusiones
+
+En conclusión, aunque los modelos planos simplifican el análisis al centrarse exclusivamente en el efecto del artista, el enfoque jerárquico proporcionó una visión más completa al permitir la evaluación de múltiples niveles de influencia. Sin embargo, únicamente incluimos la popularidad dada, las popularidades generadas individuales y colectivas de los artistas y la valencia, por lo que consideramos que la exclusión de otras variables predictoras pudo haber limitado la comprensión total de la popularidad de las canciones en Spotify. Por lo tanto, en futuros análisis consideraremos la inclusión de más variables predictoras para obtener una imagen más precisa y completa del problema.
+
+Si bien logramos ver una mejora considerable cuando pasamos del modelo que considera una misma popularidad media para los artistas, al modelo que considera una componente de popularidad del artista y una de la canción (homogéneo y heterogéneo, respectivamente). En el siguiente paso, del modelo heterogéneo al jerárquico, la mejoría no es tan apreciable debido a que tenemos muy pocas canciones por artista (1 o dos en promedio), por lo que el modelo jerárquico no tiene mucha información con la cual mejorar su predicción.
+
+## Fuentes
+
+-   Johnson, A. A., Ott, M. Q., & Dogucu, M. (2022). Bayes rules! an introduction to applied Bayesian modeling. CRC Press.
+-   Kaggle. (2021). Spotify Tracks Dataset \[Archivo de datos CSV\]. Recuperado de https://www.kaggle.com/datasets/maharshipandya/-spotify-tracks-dataset?select=dataset.csv
+
+## Anexos
+
+**Anexo 1: Limpieza, Adecuación y Exploración de la Base de Datos de Spotify**
+
+El Anexo 1 incluye información detallada sobre la exploración inicial de la base de datos de canciones de Spotify, así como los procedimientos de limpieza y adecuación de los datos. Se presenta un análisis exhaustivo de la estructura y calidad de los datos, identificando y abordando posibles errores, valores atípicos y datos faltantes. Además, se describen las transformaciones realizadas para preparar los datos para su posterior análisis.
