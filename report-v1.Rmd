@@ -25,9 +25,29 @@ library(kableExtra)
 
 ## Introducción
 
-De acuerdo con Wikipedia, en la plataforma de Spotify se tiene acceso a más de 100 millones de canciones. Algunas canciones son más populares que otras. Definimos a la variable $Y$ como un rating de popularidad con $Y ∈ [0, 100]$. En general, entre más reproducciones recientes tenga una una canción, su rating de popularidad será mayor.
+Este trabajo pretende efectuar un análisis de la popularidad de canciones en base a diferentes variables predictoras inherentes a las canciones. 
 
-Sabemos que la popularidad de una canción, no siempre es reflejo de su calidad, popularidad a largo plazo, o popularidad afuera de la audiencia de Spotify. Además del artista, hay otras características que hacen popular a una canción, como la “valencia”, que define qué tan alegre suena una pieza.
+Si bien, existen muchas bases de datos que proporcionan información acerca de artistas y piezas musicales, nos concentraremos en una base de datos despotify que nos brinda dicha información.
+
+Spotify es una de las plataformas de streaming de música más grandes y populares a nivel mundial. 
+
+* Número de usuarios: A partir de principios de 2024, Spotify reportó tener más de 550 millones de usuarios activos mensuales, con más de 240 millones de suscriptores de pago. Esto lo posiciona como una de las plataformas de música más utilizadas a nivel global.
+
+* Cobertura geográfica: Spotify está disponible en 184 países y territorios, lo que le proporciona una presencia global significativa. Esto incluye la mayoría de los principales mercados de música en América del Norte, Europa, América Latina, Asia y África.
+
+* Biblioteca: Spotify cuenta con una biblioteca de más de 100 millones de canciones y 5 millones de podcasts cubriendo una amplia variedad de géneros y estilos.
+
+* Influencia en la industria musical: Spotify tiene un impacto considerable en la industria musical. Las listas de éxitos y las playlists hechas por Spotify,pueden influir significativamente en el éxito de una canción o artista.
+
+* Audiencia demográfica: La audiencia de Spotify tiende a ser más joven, con una gran proporción de usuarios en el rango de 18 a 34 años.
+
+
+Bajo es te alcance, sabemos que la popularidad de una canción, no siempre es reflejo de su calidad, popularidad a largo plazo, o popularidad afuera de la audiencia de Spotify. 
+
+Además del artista, hay otras características que hacen popular a una canción, como el género, tempo ola “valencia”, que define qué tan alegre suena una pieza.
+
+En este trabajo intentaremos entender por que algunas canciones son más populares que otras, para esto definimos a la variable $Y$ como un rating de popularidad con $Y ∈ [0, 100]$, y sabemos que, en general, entre más reproducciones recientes tenga una una canción, su rating de popularidad será mayor.
+
 
 Para el proyecto nos enfocaremos en entender:
 
@@ -43,10 +63,10 @@ Para nuestro proyecto haremos uso de distintos tipos de modelos:
 
 1.  Para el objetivo inicial, generaremos un modelo lineal generalizado con priors poco informativas haciendo uso de las variables 'popularity', 'duration', 'explicit', 'danceability', 'tempo' y 'genre'. Esto nos permitirá conocer los aspectos más relevantes y el impacto de dichas variables en la popularidad de las canciones.
 2.  Compararemos el modelo anterior con un modelo con priors informativas.
-3.  Modelo con parámetros homogéneos: Modelar la popularidad de las canciones sin tomar en cuenta el artista.
-4.  Modelo con parámetros heterogéneos: Modelar la popularidad de las canciones tomando en cuenta a los artistas que las interpretan.
-5.  Modelo jerárquico: Una alternativa intermedia donde permitimos que la distribución inicial sobre la popularidad pueda adaptarse a los datos. Y comparar sus distribuciones predictivas con los datos observados, para ver cuál modela mejor y porqué.
-6.  Modelo jerárquico con DAG: Haremos un DAG para agregar la variable de valencia al modelo jerárquico.
+3.  Modelo con parámetros homogéneos: Modelaremos la popularidad de las canciones tomando en cuenta una medida general de la popularidad de los artistas, es decir, no tomaremos en cuenta la popularidad individual de cada artista.
+4.  Modelo con parámetros heterogéneos: EN contraste al modelo anterior, modelaremos la popularidad de las canciones tomando en cuenta la popularidad individual de los artistas, permitiendo que este parámetro varie entre artista y artista.
+5.  Modelo jerárquico: Plantearemos un modelo de jerarquía que nos permita integrar  los dos enfoques anteriores, permitiendo que exista variabilidad entre la popularidad del artista, pero teniendo en cuenta la popularidad general que reepresenta la interacción entre todos los artista en la base de datos. FInalmente, compararemos los resultados entre los dos modelos anteriores y este con el fin de determinar que modelo ajusta mejor a los datos.
+6.  Modelo jerárquico con DAG: Haremos un DAG para agregar la variable de valencia al modelo jerárquico con el onjetivo de observar que tanto influye esta variable en la popularidad general de una canción.
 
 ## Datos
 
