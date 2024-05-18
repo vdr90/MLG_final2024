@@ -27,7 +27,7 @@ library(kableExtra)
 
 Este trabajo pretende efectuar un análisis de la popularidad de canciones en base a diferentes variables predictoras inherentes a las canciones. 
 
-Si bien, existen muchas bases de datos que proporcionan información acerca de artistas y piezas musicales, nos concentraremos en una base de datos despotify que nos brinda dicha información.
+Si bien, existen muchas bases de datos que proporcionan información acerca de artistas y piezas musicales, nos concentraremos en una base de datos de spotify que nos brinda dicha información.
 
 Spotify es una de las plataformas de streaming de música más grandes y populares a nivel mundial. 
 
@@ -37,14 +37,14 @@ Spotify es una de las plataformas de streaming de música más grandes y popular
 
 * Biblioteca: Spotify cuenta con una biblioteca de más de 100 millones de canciones y 5 millones de podcasts cubriendo una amplia variedad de géneros y estilos.
 
-* Influencia en la industria musical: Spotify tiene un impacto considerable en la industria musical. Las listas de éxitos y las playlists hechas por Spotify,pueden influir significativamente en el éxito de una canción o artista.
+* Influencia en la industria musical: Spotify tiene un impacto considerable en la industria musical. Las listas de éxitos y las playlists hechas por Spotify, pueden influir significativamente en el éxito de una canción o artista.
 
 * Audiencia demográfica: La audiencia de Spotify tiende a ser más joven, con una gran proporción de usuarios en el rango de 18 a 34 años.
 
 
-Bajo es te alcance, sabemos que la popularidad de una canción, no siempre es reflejo de su calidad, popularidad a largo plazo, o popularidad afuera de la audiencia de Spotify. 
+Bajo este alcance, sabemos que la popularidad de una canción, no siempre es reflejo de su calidad, popularidad a largo plazo, o popularidad afuera de la audiencia de Spotify. 
 
-Además del artista, hay otras características que hacen popular a una canción, como el género, tempo ola “valencia”, que define qué tan alegre suena una pieza.
+Además del artista, hay otras características que hacen popular a una canción, como el género, tempo o la “valencia”, que define qué tan alegre suena una pieza.
 
 En este trabajo intentaremos entender por que algunas canciones son más populares que otras, para esto definimos a la variable $Y$ como un rating de popularidad con $Y ∈ [0, 100]$, y sabemos que, en general, entre más reproducciones recientes tenga una una canción, su rating de popularidad será mayor.
 
@@ -101,14 +101,14 @@ Generamos un modelo lineal con priors poco informativas.
 
 El modelo lineal simple lo expresamos como:
 
-$y_i = \beta * x_i + \sigma_i​$
+$y_i = \beta * x_i + \epsilon_i​$
 
 Donde:
 
 * $y_i$​ es la popularidad de la observación $i$. 
 * $x_i$​ representa una variable predictora (por ejemplo, 'duration') para la observación i. 
 * $\beta$​ representa el coeficiente del modelo. 
-* $\sigma_i$​ es el error aleatorio asociado con la observación $i$, que asumiremos normalmente distribuido con media cero y varianza constante.
+* $\epsilon_i$​ es el error aleatorio asociado con la observación $i$, que asumiremos normalmente distribuido con media cero y varianza constante.
 
 Para nuestro ejercicio requerimos 5 betas para cada una de las variables predictoras que usaremos.
 
