@@ -74,8 +74,15 @@ Para este proyecto usaremos la base de datos “Spotify Tracks Dataset” de Kag
 ```{r}
 datos <- read.csv("datos/datos.csv") 
 datos <- as.data.frame(datos)
+datos <- subset(datos, duration_ms != 0)
+
 selected_datos_small <- read.csv("datos/datos_small.csv") 
+selected_datos_small <- subset(selected_datos_small, duration_ms != 0)
+
 selected_datos <- read.csv("datos/selected_datos_75.csv") 
+selected_datos <- subset(selected_datos, duration_ms != 0)
+
+
 glimpse(datos)
 ```
 
@@ -105,6 +112,29 @@ Donde:
 
 Para nuestro ejercicio requerimos 5 betas para cada una de las variables predictoras que usaremos.
 
+```{r}
+
+# Convertimos género a factor (tratamiento de categóricas)
+selected_datos_small$genre_numeric <- as.factor(selected_datos_small$genre)
+
+```
+
+Stan no maneja factores directamente, así que necesitamos convertir la variable factor genre en variables dummy (indicadoras). 
+Podemos hacer esto utilizando la función model.matrix().
+
+```{r}
+
+# Crear variables dummy para 'genre'
+genre_dummies <- model.matrix(~ genre_numeric - 1, selected_datos_small)
+
+# Verificar el resultado
+head(genre_dummies)
+
+#Añadimos las dummies
+selected_datos_small <- cbind(selected_datos_small, genre_dummies)
+
+```
+
 ```{r message=FALSE, results="hide"}
 
 stan_code_lineal <- "
@@ -115,7 +145,8 @@ data {
   int<lower=0, upper=1> explicito[N];
   real<lower=0, upper=1> dance[N];  
   real<lower=0, upper=244> tempo[N];     
-  int<lower=1, upper=114> genre[N];     
+  // int<lower=1, upper=114> genre[N];   
+  matrix[N, 38] genre_dummies;   
 }
 parameters {
   real mu_popularity; 
@@ -144,7 +175,8 @@ model {
                             beta_explicito * explicito[i] +
                             beta_dance * dance[i] +
                             beta_tempo * tempo[i] +
-                            beta_genre * genre[i] 
+                            beta_genre * genre_dummies[i]
+                            //beta_genre * genre[i] 
                             , sigma_popularity); 
   }
 }
@@ -153,15 +185,17 @@ model {
 # Compilar el modelo
 stan_model_lineal <- stan_model(model_code = stan_code_lineal)
 
+selected_datos_small$duration <- selected_datos_small$duration_ms / 1000
+
 # Ajustar el modelo a los datos
 fit_lineal <- sampling(stan_model_lineal, 
                        data = list(N = nrow(selected_datos_small), 
                                    popularity = selected_datos_small$popularity,
-                                   duration = selected_datos_small$duration_ms,
+                                   duration = selected_datos_small$duration,
                                    explicito = selected_datos_small$explicit,
                                    dance = selected_datos_small$danceability,
                                    tempo = selected_datos_small$tempo,
-                                   genre = selected_datos_small$genre_numeric), 
+                                   genre_dummies = genre_dummies), 
                        iter=10000, warmup=3000, seed=123)
 
 ```
@@ -173,7 +207,7 @@ print(fit_lineal)
 
 Con base en lo anterior:
 
--   La duración no parece tener una influencia significativa en la popularidad, ya que su coeficiente es cercano a cero.
+-   La duración parece tener una muy ligera influencia en la popularidad, ya que su coeficiente es 0.04.
 -   La explicitividad tiene una influencia positiva significativa en la popularidad, con un coeficiente de 1.01, lo que sugiere que las canciones más explícitas tienden a ser más populares.
 -   La danzabilidad también tiene una influencia positiva significativa en la popularidad, con un coeficiente de 0.55, lo que indica que las canciones más adecuadas para bailar tienden a ser más populares.
 -   El tempo también tiene una influencia positiva en la popularidad, aunque más moderada que la explicitividad y la danzabilidad, con un coeficiente de 0.23.
