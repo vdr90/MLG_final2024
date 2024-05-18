@@ -79,7 +79,7 @@ selected_datos <- read.csv("datos/selected_datos_75.csv")
 glimpse(datos)
 ```
 
-Tenemos 114 mil registros de canciones y 21 características que los representan, entre las cuales destaca el identificador de la canción, el artista, el álbum en el que fue publicada, la popularidad, su duración, entre otras características. Debido al desarrollo del modelado, vamos a ocupar sólo una muestra de 75,000 canciones. Nos enfocaremos en el análisis y modelado de la popularidad, sin embargo, en el anexo 1 de este trabajo se puede consultar la limpieza y adecuación de los datos utilizados.
+Tenemos 114 mil registros de canciones y 21 características que los representan, entre las cuales destaca el identificador de la canción, el artista, el álbum en el que fue publicada, la popularidad, su duración, entre otras características. Debido al limitado poder de procesamiento y performance, así como el tiempo de entrenamiento de los modelos, optamos por reducir la cantidad de registros y utilizar sólo una muestra de 75,000 canciones. Nos enfocaremos en el análisis y modelado de la popularidad, sin embargo, en el anexo 1 de este trabajo se puede consultar la limpieza y adecuación de los datos utilizados.
 
 ```{r}
 datos <- read.csv("datos/muestra.csv")
