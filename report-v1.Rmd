@@ -78,9 +78,13 @@ datos <- subset(datos, duration_ms != 0)
 
 selected_datos_small <- read.csv("datos/datos_small.csv") 
 selected_datos_small <- subset(selected_datos_small, duration_ms != 0)
+selected_datos_small <- subset(selected_datos_small, popularity != 0)
+
 
 selected_datos <- read.csv("datos/selected_datos_75.csv") 
 selected_datos <- subset(selected_datos, duration_ms != 0)
+selected_datos <- subset(selected_datos, popularity != 0)
+
 
 
 glimpse(datos)
@@ -135,6 +139,15 @@ selected_datos_small <- cbind(selected_datos_small, genre_dummies)
 
 ```
 
+```{r}
+
+#Adicionalmente cambiamos duración a segundos
+
+selected_datos_small$duration <- selected_datos_small$duration_ms / 1000
+
+
+```
+
 ```{r message=FALSE, results="hide"}
 
 stan_code_lineal <- "
@@ -146,7 +159,7 @@ data {
   real<lower=0, upper=1> dance[N];  
   real<lower=0, upper=244> tempo[N];     
   // int<lower=1, upper=114> genre[N];   
-  matrix[N, 38] genre_dummies;   
+  matrix[N, 33] genre_dummies;   
 }
 parameters {
   real mu_popularity; 
@@ -185,8 +198,6 @@ model {
 # Compilar el modelo
 stan_model_lineal <- stan_model(model_code = stan_code_lineal)
 
-selected_datos_small$duration <- selected_datos_small$duration_ms / 1000
-
 # Ajustar el modelo a los datos
 fit_lineal <- sampling(stan_model_lineal, 
                        data = list(N = nrow(selected_datos_small), 
@@ -207,11 +218,11 @@ print(fit_lineal)
 
 Con base en lo anterior:
 
--   La duración parece tener una muy ligera influencia en la popularidad, ya que su coeficiente es 0.04.
+-   La duración parece tener una muy ligera influencia en la popularidad, ya que su coeficiente es cercano a cero.
 -   La explicitividad tiene una influencia positiva significativa en la popularidad, con un coeficiente de 1.01, lo que sugiere que las canciones más explícitas tienden a ser más populares.
 -   La danzabilidad también tiene una influencia positiva significativa en la popularidad, con un coeficiente de 0.55, lo que indica que las canciones más adecuadas para bailar tienden a ser más populares.
 -   El tempo también tiene una influencia positiva en la popularidad, aunque más moderada que la explicitividad y la danzabilidad, con un coeficiente de 0.23.
--   El género parece tener una influencia ligeramente negativa en la popularidad, aunque muy pequeña, con un coeficiente de -0.02, lo que sugiere que ciertos géneros podrían ser ligeramente menos populares en promedio en comparación con otros.
+-   El género parece tener una influencia considerable en la popularidad, lo que sugiere que ciertos géneros podrían ser más populares en promedio en comparación con otros.
 
 En resumen, la explicitividad, la danzabilidad y el tempo parecen ser los principales impulsores de la popularidad de una canción, mientras que la duración y el género tienen influencias menos significativas.
 
@@ -229,9 +240,9 @@ stan_plot(
 
 ## 2) Modelo lineal con priors informativas
 
-En nuestro modelo anterior, las prioris eran poco o nulamente informativas por lo que integraremos a dicho modelo prioris informativas que reflejen nuestro conocimiento de las variables:
+En nuestro modelo anterior, las priors eran poco  informativas ya que acotamos la variabilidad. EN este segundo modelo integraremos priors más informativas que reflejen nuestro conocimiento de las variables:
 
--   ¿Cuánto dura la canción?: duration_ms
+-   ¿Cuánto dura la canción?: duration
 -   ¿Es explicita?: explicit
 -   ¿Qué tan bailable es?: danceability
 -   Tempo: tempo
@@ -267,15 +278,15 @@ Proponemos como distribuciones iniciales las siguientes:
 
 -   Tempo:
 
-    Variable continua entre 0 y 244. Utilizaremos una distribución normal truncada.
+    Variable continua entre 0 y 244. Utilizaremos una distribución uniforme.
 
-    $$tempo \sim N+(\mu,\sigma)$$
+    $$tempo \sim U(0,244)$$
 
 -   Género:
 
-    El género es una variable entera categórica, por lo que la modelaremos usando una distribución Multinomial.
+    El género es una variable entera categórica, por lo que la modelaremos usando una distribución Normal.
 
-    $$género \sim Multinomial(n,p)$$
+    $$género \sim N(\mu, \sigma)$$
 
 Utilizaremos un modelo lineal generalizado (GLM), donde la popularidad sea una función lineal de las demás variables, teniendo en cuenta la naturaleza discreta de la popularidad (valores enteros entre 0 y 100).
 
@@ -285,11 +296,12 @@ Utilizaremos un modelo lineal generalizado (GLM), donde la popularidad sea una f
   data {
     int<lower=0> N;               
     int<lower=0, upper=100> popularity[N];  
-    real<lower=0> duration_ms[N];      
+    real<lower=0> duration[N];      
     int<lower=0, upper=1> explicito[N];
     real<lower=0, upper=1> danceability[N];  
-    real<lower=0, upper=244> tempo[N];     
-    real<lower=1, upper=114> genre[N];        
+    real<lower=0, upper=244> tempo[N];  
+    matrix[N, 33] genre_dummies;      
+    //real<lower=1, upper=114> genre[N];        
   }
 
   parameters {
@@ -297,40 +309,44 @@ Utilizaremos un modelo lineal generalizado (GLM), donde la popularidad sea una f
     real<lower=0> p_duration;        
     real<lower=0, upper=1> p_explicit;  
     real<lower=0, upper=1> p_dance; 
-    real<lower=0> mu_tempo;             
-    real<lower=0> sigma_tempo;  
+    //real<lower=0> mu_tempo;             
+    //real<lower=0> sigma_tempo;  
     real<lower=0> mu_genre;             
     real<lower=0> sigma_genre;        
-    real<lower=0> p_tempo;                
-    real<lower=0> p_genre;              
-
+    //real<lower=0> p_tempo; 
+    real<lower=0, upper=244> p_tempo;               
+    real p_genre;               
+                          
   }
 
   model {
 
     // Priors
     phi_popularity ~ normal(0, 1);
-    p_duration ~ exponential(180000);  
+    p_duration ~ exponential(180);  
     p_explicit ~ beta(2,2);                
     p_dance ~ beta(1, 1);           
-    mu_tempo ~ normal(120, 30);               
-    sigma_tempo ~ cauchy(0, 5);      
+    //mu_tempo ~ normal(120, 30);               
     mu_genre ~ normal(120, 30);               
     sigma_genre ~ cauchy(0, 5);  
-    p_tempo ~ normal(mu_tempo, sigma_tempo);
+    p_tempo ~ uniform(0, 244);
+    //p_tempo ~ normal(mu_tempo, sigma_tempo);
     p_genre ~ normal(mu_genre, sigma_genre);
 
     // Likelihood
     for (i in 1:N) {
       real mu_popularity;
       
-      mu_popularity = p_duration * duration_ms[i] + 
+      
+      
+      popularity[i] ~ neg_binomial_2(p_duration * duration[i] + 
                       p_explicit * explicito[i] +
                       p_dance * danceability[i] +
                       p_tempo * tempo[i] +
-                      p_genre * genre[i];
-      
-      popularity[i] ~ neg_binomial_2(mu_popularity, phi_popularity); // Distribución binomial negativa para popularidad
+                      // dot_product(p_genre, to_vector(genre_dummies[i]));
+                      p_genre * genre_dummies[i],
+                      // p_genre * genre[i];
+                      phi_popularity); // Distribución binomial negativa para popularidad
     }
   }
   "
@@ -341,15 +357,17 @@ stan_model <- stan_model(model_code = stan_code)
 stan_data <- list(
   N = nrow(selected_datos_small),
   popularity = selected_datos_small$popularity,
-  duration_ms = selected_datos_small$duration_ms,
+  duration = selected_datos_small$duration,
   explicito = selected_datos_small$explicit,
   danceability = selected_datos_small$danceability,
   tempo = selected_datos_small$tempo,
-  genre = selected_datos_small$genre_numeric
+  #genre = selected_datos_small$genre_numeric
+  genre_dummies = genre_dummies
 )
 
 # Ajustar el modelo a los datos
 fit <- sampling(stan_model, data = stan_data, chains = 4, iter = 50000, warmup = 5000, seed=123)
+
 ```
 
 Observamos los resultados
@@ -358,7 +376,9 @@ Observamos los resultados
 print(fit)
 ```
 
-Podemos deducir que la explicitividad, la danzabilidad, el tempo y el género parecen tener influencias significativas en la popularidad de una canción, mientras que la duración parece tener una influencia insignificante. Específicamente, las canciones más explícitas, adecuadas para bailar y con ciertos tempos y géneros tienden a ser más populares en promedio.
+Podemos deducir que la explicitividad, la danzabilidad, el tempo y especialmente el género parecen tener influencias significativas en la popularidad de una canción, mientras que la duración parece tener una influencia insignificante. 
+
+Específicamente, las canciones más explícitas, adecuadas para bailar y con ciertos tempos, tienden a ser más populares en promedio, en cuanto al género, requeriremos hacer un análisis más detallado pues si bien es una variable de afectación considerable, debemos plantear otro esquema para determinar que géneros son los que impactan más.
 
 Observamos intervalos de credibilidad
 
@@ -391,9 +411,9 @@ parameters {
 
 model {
   // Priors
-  intercept ~ normal(0, 1);      
-  beta_artist ~ normal(0, 1);     
-  sigma ~ normal(0, 1);           
+  intercept ~ normal(50, 25);      
+  beta_artist ~ normal(50, 25);     
+  sigma ~ cauchy(0, 5);           
 
   // Likelihood
   for (i in 1:N) {
@@ -435,7 +455,7 @@ stan_plot(
 )
 ```
 
-Para observar el desempeño obtendremos las estimaciones de popularidad para 20 canciones y compararemos estas con la popularidad real.
+Para observar el desempeño obtendremos las prediccines de popularidad para 20 canciones y compararemos estas con la popularidad real.
 
 En el siguiente gráfico puede observarse un intervalo del 95% de credibilidad para las 10 canciones, así como la media de las simulaciones y el valor real de la popularidad para la canción.
 
